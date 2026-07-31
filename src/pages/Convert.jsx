@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { FORMATS, getConversion } from '../converters/index.js'
 import { takePendingFile } from '../lib/pendingFile.js'
 import { isFavorite, toggleFavorite } from '../lib/favorites.js'
+import { getLiveSession } from '../lib/editSession.js'
 import ConverterWidget from '../components/ConverterWidget.jsx'
 import ConverterFaq from '../components/ConverterFaq.jsx'
 import Seo from '../components/Seo.jsx'
@@ -11,6 +12,7 @@ import { ORIGIN, CONVERTER_FAQ, describePair } from '../seo/copy.js'
 
 export default function Convert() {
   const { pair } = useParams()
+  const [searchParams] = useSearchParams()
   const match = /^([a-z0-9]+)-to-([a-z0-9]+)$/.exec(pair || '')
   const from = match?.[1]
   const to = match?.[2]
@@ -18,6 +20,20 @@ export default function Convert() {
 
   const initialFile = useMemo(() => takePendingFile(), [])
   const [fav, setFav] = useState(() => (from && to ? isFavorite(from, to) : false))
+  const live = getLiveSession()
+  const wantReview = searchParams.get('review') === '1'
+  const reviewHint =
+    wantReview && live && live.from === from && live.to === to
+      ? 'Your last conversion is still open in Review below — download or keep editing.'
+      : wantReview
+        ? 'Convert a file to open Review & Edit. Download is always available — editing is optional.'
+        : null
+
+  useEffect(() => {
+    if (!wantReview) return
+    const el = document.querySelector('[data-review="1"], .widget')
+    el?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+  }, [wantReview, pair])
 
   if (!entry) return <NotFound />
 
@@ -43,6 +59,14 @@ export default function Convert() {
         </p>
         <h1>{title} Converter</h1>
         <p>{description}</p>
+        <p className="meta">
+          Edit before you download — still 100% in your browser. Or skip editing and download right away.
+        </p>
+        {reviewHint && (
+          <p className="meta" data-review-hint="1" role="status">
+            {reviewHint}
+          </p>
+        )}
         <p>
           <button
             type="button"

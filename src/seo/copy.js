@@ -1,8 +1,8 @@
 export const ORIGIN = 'https://formatconvert.quantumlogicslimited.com'
 
-export const HOME_TITLE = 'FormatConvert — Convert files in your browser'
+export const HOME_TITLE = 'FormatConvert — Convert & edit files in your browser'
 export const HOME_DESCRIPTION =
-  'Client-side file converter for documents, images, data, ebooks, subtitles, and media. Nothing uploaded. Free developer SDK.'
+  'Client-side file converter with Review & Edit before download — documents, images, data, ebooks, subtitles, and media. Nothing uploaded. Free developer SDK.'
 
 export const DEVELOPERS_TITLE = 'Developer API'
 export const DEVELOPERS_DESCRIPTION =
@@ -11,15 +11,15 @@ export const DEVELOPERS_DESCRIPTION =
 /** Pair-specific short descriptions (from-to key). */
 export const DESCRIPTIONS = {
   'pdf-txt':
-    'Extracts real text using character positions — column-aware reading order, paragraph gaps, and optional OCR for scanned pages.',
+    'Extracts real text using character positions — column-aware reading order, paragraph gaps, and optional OCR for scanned pages. Review & edit before download.',
   'pdf-md':
-    'Rebuilds document structure — font sizes become headings, bold stays bold, bullets become lists.',
-  'pdf-html': 'Structured extraction rendered as a clean, styled HTML document.',
+    'Rebuilds document structure — font sizes become headings, bold stays bold, bullets become lists. Edit the Markdown before you save.',
+  'pdf-html': 'Structured extraction rendered as a clean, styled HTML document — editable in Review.',
   'md-pdf':
-    'Typesets headings, lists, tables, code blocks, quotes and links into a proper PDF.',
-  'html-pdf': 'Renders your HTML content into a typeset, paginated PDF.',
+    'Typesets headings, lists, tables, code, quotes, links, and images into a proper PDF. Edit the Markdown source or tweak the PDF output before download.',
+  'html-pdf': 'Renders your HTML content into a typeset, paginated PDF — edit source or PDF output in Review.',
   'txt-pdf':
-    'Beautiful plain-text typesetting with font, margin, and Unicode options — or Markdown mode for structured layouts.',
+    'Beautiful plain-text typesetting with font, margin, and Unicode options — or Markdown mode. Edit before download.',
   'pdf-png': 'Renders each PDF page to a high-resolution image. Multi-page PDFs download as a zip.',
   'pdf-jpg': 'Renders each PDF page to a high-resolution JPEG. Multi-page PDFs download as a zip.',
   'pdf-webp': 'Renders each PDF page to WebP. Multi-page PDFs download as a zip.',
@@ -59,16 +59,26 @@ export const CONVERTER_FAQ = [
   {
     question: 'Is my file uploaded to a server?',
     answer:
-      'No. FormatConvert runs entirely in your browser. Files stay on your device; nothing is sent to our servers for conversion.',
+      'No. FormatConvert runs entirely in your browser. Files stay on your device; nothing is sent to our servers for conversion or editing.',
+  },
+  {
+    question: 'Can I edit the file before downloading?',
+    answer:
+      'Yes. After convert, Review & Edit lets you change the source (with live re-convert) and/or tweak the output (text, images, best-effort PDF tools). A Download button is always available — editing is optional.',
   },
   {
     question: 'What file sizes work best?',
     answer:
-      'Documents and images usually work well up to tens of megabytes. Audio/video uses ffmpeg.wasm — keep media under about 500 MB when possible.',
+      'Documents and images usually work well up to tens of megabytes. Audio/video uses ffmpeg.wasm — keep media under about 500 MB when possible. Very large files may be preview/download only in Review.',
   },
   {
     question: 'Does PDF to text work on scanned PDFs?',
     answer:
       'Yes. When a PDF has little or no text layer, auto OCR runs on empty pages (or force OCR on all pages). English is bundled; other languages download on first use.',
+  },
+  {
+    question: 'Does Markdown to PDF include images?',
+    answer:
+      'Yes for data:, blob:, and https: image URLs fetched in your browser. Layout is best-effort compared to desktop publishing apps.',
   },
 ]

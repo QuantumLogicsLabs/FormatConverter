@@ -101,6 +101,12 @@ export class PdfBuilder {
     }
   }
 
+  /** Force a page break (used for explicit `<!-- pagebreak -->` markers). */
+  addPage() {
+    this.doc.addPage()
+    this.y = this.margin
+  }
+
   space(pts) {
     // Vertical spacing never carries across a page break
     if (this.y > this.margin) this.y = Math.min(this.y + pts, this.pageH - this.margin)
@@ -241,10 +247,10 @@ export class PdfBuilder {
     this.space(10)
   }
 
-  writeBlockquote(renderContents) {
+  async writeBlockquote(renderContents) {
     const startY = this.y
     const startPage = this.doc.getCurrentPageInfo().pageNumber
-    renderContents()
+    await renderContents()
     const endPage = this.doc.getCurrentPageInfo().pageNumber
     this.doc.setDrawColor(160, 170, 190)
     this.doc.setLineWidth(2.5)
@@ -322,6 +328,44 @@ export class PdfBuilder {
     this.doc.setLineWidth(1)
     this.doc.line(this.margin, this.y, this.margin + this.maxW, this.y)
     this.space(14)
+  }
+
+  /**
+   * Embed a raster image, scaled to fit the available width (never upscaled)
+   * while keeping aspect ratio. `dataUrlOrBytes` is a data: URL string or raw
+   * image bytes (Uint8Array) — jsPDF sniffs PNG/JPEG headers from either.
+   * opts: { maxWidth, align: 'center'|'left', indent, caption, spacingAfter, format }
+   */
+  writeImage(dataUrlOrBytes, opts = {}) {
+    const { maxWidth, align = 'center', indent = 0, caption, spacingAfter = 10, format } = opts
+    let props
+    try {
+      props = this.doc.getImageProperties(dataUrlOrBytes)
+    } catch (e) {
+      throw new Error(`Could not read image: ${e?.message || e}`)
+    }
+    const availW = this.maxW - indent
+    const capW = maxWidth ? Math.min(maxWidth, availW) : availW
+    const scale = Math.min(capW / props.width, 1)
+    const w = props.width * scale
+    const h = props.height * scale
+
+    this.ensure(h)
+    const x = align === 'left' ? this.margin + indent : this.margin + indent + Math.max(0, availW - w) / 2
+    this.doc.addImage(dataUrlOrBytes, format || props.fileType || 'PNG', x, this.y, w, h)
+    this.y += h
+
+    const alt = caption?.trim()
+    if (alt) {
+      this.space(4)
+      this.writeRuns([{ text: alt, italic: true, color: [130, 135, 145] }], {
+        size: 9,
+        indent,
+        spacingAfter,
+      })
+    } else {
+      this.space(spacingAfter)
+    }
   }
 
   finish() {

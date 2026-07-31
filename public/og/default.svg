@@ -9,7 +9,7 @@
   <rect width="1200" height="630" fill="url(#g)"/>
   <rect x="48" y="48" width="1104" height="534" rx="24" fill="none" stroke="#3d5a80" stroke-width="2"/>
   <text x="96" y="180" fill="#7dd3fc" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="36" font-weight="600">FormatConvert</text>
-  <text x="96" y="280" fill="#f8fafc" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="52" font-weight="700">Convert files in your browser</text>
-  <text x="96" y="360" fill="#94a3b8" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="28">Documents, images, data, media — nothing uploaded</text>
+  <text x="96" y="280" fill="#f8fafc" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="52" font-weight="700">Convert &amp; edit files in your browser</text>
+  <text x="96" y="360" fill="#94a3b8" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="28">Review before download — documents, images, data, media — nothing uploaded</text>
   <text x="96" y="520" fill="#64748b" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="22">quantumlogicslimited.com</text>
 </svg>

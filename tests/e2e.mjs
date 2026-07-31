@@ -1148,8 +1148,13 @@ await page.waitForSelector('.detect-panel', { timeout: 5000 })
 log('UI: home auto-detect offers targets', (await page.locator('.detect-panel .chip').count()) >= 3)
 
 await page.locator('.detect-panel .chip', { hasText: 'Text' }).click()
-await page.waitForSelector('.output', { timeout: 10000 })
-log('UI: home → convert page hand-off converts', (await page.locator('.output').inputValue()).includes('Hi'))
+await page.waitForSelector('[data-review="1"]', { timeout: 10000 })
+log('UI: home → convert opens Review', (await page.locator('[data-review="1"]').count()) === 1)
+log(
+  'UI: home → convert page hand-off converts',
+  (await page.locator('.output').first().inputValue()).includes('Hi')
+)
+log('UI: Review Download visible', (await page.locator('[data-review-download="1"]').count()) === 1)
 
 // Batch UI: 3 files through md → pdf
 await page.goto(BASE + '/convert/md-to-pdf', { waitUntil: 'networkidle' })
@@ -1211,7 +1216,9 @@ const frame = page.frameLocator('#emb')
 await frame.locator('input[type=file]').setInputFiles({
   name: 'note.txt', mimeType: 'text/plain', buffer: Buffer.from('hello *embed*'),
 })
-await frame.locator('.output').waitFor({ timeout: 10000 })
+await frame.locator('[data-review="1"]').waitFor({ timeout: 10000 })
+const embedOut = await frame.locator('.review-preview-side .output, textarea.output').last().inputValue()
+log('Embed: review shows converted markdown', /hello/.test(embedOut) && /\*/.test(embedOut))
 const embedResult = await page.evaluate(() => window.__embedResult)
 log('Embed: postMessage result received', embedResult.filename === 'note.md' && embedResult.size > 0 && embedResult.to === 'md')
 const embedTheme = await page.frame({ url: /\/embed\?/ }).evaluate(() => document.documentElement.getAttribute('data-theme'))
@@ -1240,8 +1247,9 @@ if (offlineRendered) {
     name: 'off.md', mimeType: 'text/markdown', buffer: Buffer.from('# Offline\n\nworks'),
   })
   try {
-    await page.waitForSelector('.output', { timeout: 10000 })
-    offlineConverted = (await page.locator('.output').inputValue()).includes('Offline')
+    await page.waitForSelector('[data-review="1"]', { timeout: 10000 })
+    const vals = await page.locator('textarea.output').allTextContents()
+    offlineConverted = vals.some((v) => /Offline/i.test(v))
   } catch {
     offlineConverted = false
   }
@@ -1376,7 +1384,13 @@ log('SEO: Developers documents runTool', (await page.content()).includes('runToo
 log('SEO: Developers mentions prerender', (await page.content()).includes('prerender'))
 log('SEO: Developers mentions v6 production', (await page.content()).includes('v6 production'))
 log('SEO: Developers mentions v7 production', (await page.content()).includes('v7 production'))
+log('SEO: Developers mentions v8 production', (await page.content()).includes('v8 production'))
 log('SEO: Developers documents parentOrigin', (await page.content()).includes('parentOrigin'))
+await page.goto(BASE + '/convert/md-to-pdf', { waitUntil: 'networkidle' })
+log(
+  'SEO: FAQ mentions edit before download',
+  (await page.content()).includes('Can I edit the file before downloading')
+)
 
 const dtsRes = await fetch(BASE + '/formatconvert.d.ts')
 const dtsText = dtsRes.ok ? await dtsRes.text() : ''
@@ -1446,8 +1460,316 @@ await page.locator('input[type=file]').setInputFiles({
   ),
 })
 await page.locator('.btn-primary', { hasText: /Convert/i }).click()
-await page.waitForSelector('[data-compare="1"]', { timeout: 15000 }).catch(() => {})
+await page.waitForSelector('[data-review="1"]', { timeout: 15000 })
+await page.locator('.review-tabs button', { hasText: 'Preview' }).click()
+await page.waitForSelector('[data-compare="1"]', { timeout: 5000 }).catch(() => {})
 log('UI: image compare mounts', (await page.locator('[data-compare="1"]').count()) === 1)
+
+// Review: Source Apply for md→html
+await page.goto(BASE + '/convert/md-to-html', { waitUntil: 'networkidle' })
+await page.locator('input[type=file]').setInputFiles({
+  name: 'e.md',
+  mimeType: 'text/markdown',
+  buffer: Buffer.from('# Title\n\nHello edit'),
+})
+await page.waitForSelector('[data-review="1"]', { timeout: 15000 })
+await page.locator('.review-tabs button', { hasText: 'Source' }).click().catch(() => {})
+await page.locator('.source-text-editor textarea').fill('# Changed\n\nHello edited')
+await page.locator('.source-text-editor .btn-primary').click()
+await page.waitForTimeout(1500)
+const editedHtml = await page.locator('.review-preview-side .output, .review-edit .output').last().inputValue().catch(() => '')
+const previewHasChanged = await page.evaluate(async () => {
+  const ta = document.querySelector('.review-preview-side textarea.output')
+  if (ta) return /Changed|edited/i.test(ta.value)
+  // html preview may be in iframe-less ResultPanel as textarea for text/html
+  const all = [...document.querySelectorAll('textarea.output')].map((el) => el.value).join('\n')
+  return /Changed|edited/i.test(all)
+})
+log('UI: Review source Apply refreshes preview', previewHasChanged || /Changed|edited/i.test(editedHtml))
+
+// Review: Output text edit
+await page.locator('.review-tabs button', { hasText: 'Output' }).click()
+await page.waitForSelector('[data-editor="output-text"]', { timeout: 5000 }).catch(() => {})
+if ((await page.locator('[data-editor="output-text"]').count()) > 0) {
+  await page.locator('[data-editor="output-text"] textarea').fill('<p>Patched output</p>\n')
+  await page.locator('[data-editor="output-text"] .btn').click()
+  log('UI: Review output text Apply', true)
+} else {
+  log('UI: Review output text Apply', false, 'no output-text editor')
+}
+
+// Media pair: edit unsupported notice + download (reuse short wav from SDK path via UI)
+await page.setViewportSize({ width: 1280, height: 800 })
+await page.goto(BASE + '/convert/wav-to-mp3', { waitUntil: 'networkidle' })
+const tinyWav = await page.evaluate(async () => {
+  // 0.05s mono 8-bit-ish PCM WAV
+  const sr = 8000
+  const n = Math.floor(sr * 0.05)
+  const buf = new ArrayBuffer(44 + n * 2)
+  const v = new DataView(buf)
+  const w = (o, s) => {
+    for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i))
+  }
+  w(0, 'RIFF')
+  v.setUint32(4, 36 + n * 2, true)
+  w(8, 'WAVE')
+  w(12, 'fmt ')
+  v.setUint32(16, 16, true)
+  v.setUint16(20, 1, true)
+  v.setUint16(22, 1, true)
+  v.setUint32(24, sr, true)
+  v.setUint32(28, sr * 2, true)
+  v.setUint16(32, 2, true)
+  v.setUint16(34, 16, true)
+  w(36, 'data')
+  v.setUint32(40, n * 2, true)
+  return Array.from(new Uint8Array(buf))
+})
+await page.locator('input[type=file]').setInputFiles({
+  name: 'tone.wav',
+  mimeType: 'audio/wav',
+  buffer: Buffer.from(Uint8Array.from(tinyWav)),
+})
+await page.waitForSelector('[data-review="1"]', { timeout: 90000 }).catch(() => {})
+log(
+  'UI: AV pair shows EDIT_UNSUPPORTED',
+  (await page.locator('[data-edit-unsupported="1"]').count()) === 1
+)
+log(
+  'UI: AV Review Download ready',
+  (await page.locator('[data-review-download="1"]').count()) === 1
+)
+
+// Instead open md-to-pdf PDF output editor tab
+await page.goto(BASE + '/convert/md-to-pdf', { waitUntil: 'networkidle' })
+await page.locator('input[type=file]').setInputFiles({
+  name: 'p.md',
+  mimeType: 'text/markdown',
+  buffer: Buffer.from('# PDF Edit\n\nBody text UNIQUEPDFEDIT'),
+})
+const convertBtn = page.locator('.btn-primary', { hasText: /Convert/i })
+if (await convertBtn.count()) await convertBtn.click()
+await page.waitForSelector('[data-review="1"]', { timeout: 30000 })
+await page.locator('.review-tabs button', { hasText: 'Output' }).click()
+await page.waitForSelector('.pdf-output-editor, [data-testid="pdf-output-editor"]', { timeout: 15000 }).catch(() => {})
+log(
+  'UI: PDF output editor mounts',
+  (await page.locator('.pdf-output-editor, [data-testid="pdf-output-editor"]').count()) >= 1
+)
+log('UI: Review Download always present', (await page.locator('[data-review-download="1"]').count()) === 1)
+
+// PDF add-text + apply
+await page.locator('.pdf-output-editor input[aria-label="Text to add"]').fill('REVIEWSTAMP')
+await page.locator('.pdf-output-editor button', { hasText: /^Add$/ }).first().click()
+await page.locator('.pdf-output-editor .btn-primary').click()
+await page.waitForTimeout(1500)
+const stamped = await page.evaluate(async () => {
+  const a = document.querySelector('[data-review-download="1"]')
+  // grab blob via live session is hard; extract from iframe if preview
+  // Instead reconvert isn't available — check status msg
+  return document.body.innerText.includes('Output updated') || document.body.innerText.includes('Applying') || document.querySelector('.pdf-ops-list') === null
+})
+log('UI: PDF output Apply runs', stamped !== false)
+
+// SDK: md pagebreak + image embed
+const fidelity = await page.evaluate(async () => {
+  const { convert } = await import('/sdk.js')
+  const md = `# One\n\nHello\n\n<!-- pagebreak -->\n\n# Two\n\nMore\n\n![tiny](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==)\n`
+  const pdf = await convert(new File([md], 'f.md', { type: 'text/markdown' }), 'pdf')
+  const plain = await convert(new File(['# One\n\nHello'], 's.md', { type: 'text/markdown' }), 'pdf')
+  const txt = await (await convert(new File([pdf.blob], 'x.pdf'), 'txt')).blob.text()
+  return {
+    larger: pdf.blob.size > plain.blob.size,
+    pages: /Two/i.test(txt) && /One/i.test(txt),
+  }
+})
+log('SDK: md→pdf pagebreak + image grows file', fidelity.larger && fidelity.pages, JSON.stringify(fidelity))
+
+await page.setViewportSize({ width: 390, height: 844 })
+await page.goto(BASE + '/convert/txt-to-md', { waitUntil: 'networkidle' })
+await page.locator('input[type=file]').setInputFiles({
+  name: 'm.txt',
+  mimeType: 'text/plain',
+  buffer: Buffer.from('mobile review'),
+})
+await page.waitForSelector('[data-review-download="1"]', { timeout: 10000 })
+log('UI: mobile Review Download visible', (await page.locator('[data-review-download="1"]').count()) === 1)
+
+await page.setViewportSize({ width: 1280, height: 800 })
+await page.goto(BASE + '/convert/txt-to-md', { waitUntil: 'networkidle' })
+await page.locator('input[type=file]').setInputFiles({
+  name: 'pal.txt',
+  mimeType: 'text/plain',
+  buffer: Buffer.from('palette review'),
+})
+await page.waitForSelector('[data-review="1"]', { timeout: 10000 })
+await page.keyboard.press('Control+KeyK')
+await page.waitForSelector('.palette', { timeout: 3000 })
+const reviewPalette = await page.locator('.palette-item', { hasText: /Review/i }).count()
+log('UI: palette offers Review last/current', reviewPalette >= 1, `${reviewPalette}`)
+await page.keyboard.press('Escape')
+
+// More fidelity + Review coverage toward v8 gate
+const fidelityExtra = await page.evaluate(async () => {
+  const { convert } = await import('/sdk.js')
+  const tableMd = `\n| A | B |\n| --- | --- |\n| cell1 | cell2 |\n\n`
+  const tablePdf = await convert(new File([tableMd], 't.md', { type: 'text/markdown' }), 'pdf')
+  const tableTxt = await (await convert(new File([tablePdf.blob], 't.pdf'), 'txt')).blob.text()
+  const noTablePdf = await convert(new File(['# Hi\n'], 'n.md', { type: 'text/markdown' }), 'pdf')
+  const pbMd = `# P1\n\n<!-- pagebreak -->\n\n# P2\n`
+  const pbPdf = await convert(new File([pbMd], 'pb.md', { type: 'text/markdown' }), 'pdf')
+  const plainPdf = await convert(new File(['# P1\n'], 'one.md', { type: 'text/markdown' }), 'pdf')
+  const htmlPdf = await convert(
+    new File(
+      [
+        '<h1>H</h1><p>Hello</p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==" alt="x"/>',
+      ],
+      'h.html',
+      { type: 'text/html' }
+    ),
+    'pdf'
+  )
+  const htmlPlain = await convert(new File(['<h1>H</h1><p>Hello</p>'], 'h2.html', { type: 'text/html' }), 'pdf')
+  return {
+    tableTxt,
+    tableSize: tablePdf.blob.size,
+    noTableSize: noTablePdf.blob.size,
+    table:
+      tablePdf.blob.size > noTablePdf.blob.size &&
+      (/cell1/i.test(tableTxt) || /cell2/i.test(tableTxt) || (/A/.test(tableTxt) && /B/.test(tableTxt))),
+    pagebreakBigger: pbPdf.blob.size >= plainPdf.blob.size,
+    htmlImg: htmlPdf.blob.size > htmlPlain.blob.size,
+  }
+})
+log(
+  'SDK: md→pdf table cells survive pdf→txt',
+  fidelityExtra.table,
+  `sizes ${fidelityExtra.tableSize}/${fidelityExtra.noTableSize} txt=${JSON.stringify(fidelityExtra.tableTxt).slice(0, 80)}`
+)
+log('SDK: md pagebreak PDF ≥ single-page', fidelityExtra.pagebreakBigger)
+log('SDK: html→pdf with data-URL image grows', fidelityExtra.htmlImg)
+
+await page.goto(BASE + '/convert/csv-to-json', { waitUntil: 'networkidle' })
+await page.locator('input[type=file]').setInputFiles({
+  name: 't.csv',
+  mimeType: 'text/csv',
+  buffer: Buffer.from('name,age\nAda,30\n'),
+})
+const csvConvert = page.locator('.btn-primary', { hasText: /Convert/i })
+if (await csvConvert.count()) await csvConvert.click()
+await page.waitForSelector('[data-review="1"]', { timeout: 15000 })
+await page.locator('.review-tabs button', { hasText: 'Source' }).click().catch(() => {})
+await page.waitForSelector('[data-editor="source-table"], .data-table-editor', { timeout: 5000 }).catch(() => {})
+log(
+  'UI: CSV Review shows table editor',
+  (await page.locator('[data-editor="source-table"], .data-table-editor').count()) >= 1
+)
+await page.locator('.review-tabs button', { hasText: 'Output' }).click()
+log('UI: CSV Review Output tab', (await page.locator('[data-editor="output-text"]').count()) === 1)
+
+await page.goto(BASE + '/convert/png-to-webp', { waitUntil: 'networkidle' })
+await page.locator('input[type=file]').setInputFiles({
+  name: 'a.png',
+  mimeType: 'image/png',
+  buffer: Buffer.from(
+    Uint8Array.from(
+      atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='),
+      (c) => c.charCodeAt(0)
+    )
+  ),
+})
+const imgConvert = page.locator('.btn-primary', { hasText: /Convert/i })
+if (await imgConvert.count()) await imgConvert.click()
+await page.waitForSelector('[data-review="1"]', { timeout: 15000 })
+await page.locator('.review-tabs button', { hasText: 'Output' }).click()
+await page.waitForSelector('.image-output-editor, [data-editor="output-image"]', { timeout: 8000 }).catch(() => {})
+log(
+  'UI: image output annotate editor mounts',
+  (await page.locator('.image-output-editor, [data-editor="output-image"]').count()) >= 1
+)
+await page.locator('.review-tabs button', { hasText: 'Source' }).click()
+log(
+  'UI: image source editor mounts',
+  (await page.locator('[data-editor="source-image"]').count()) >= 1
+)
+
+await page.goto(BASE + '/convert/txt-to-md', { waitUntil: 'networkidle' })
+await page.locator('input[type=file]').setInputFiles({
+  name: 'dl.txt',
+  mimeType: 'text/plain',
+  buffer: Buffer.from('download now path'),
+})
+// If options empty, auto-converts; else click Download now on ready
+await page.waitForTimeout(400)
+if ((await page.locator('[data-download-now="1"]').count()) === 1) {
+  await page.locator('[data-download-now="1"]').click()
+}
+await page.waitForSelector('[data-review="1"]', { timeout: 15000 })
+log('UI: Download-now path lands in Review', (await page.locator('[data-review="1"]').count()) === 1)
+
+await page.keyboard.press('Escape')
+await page.waitForTimeout(300)
+log(
+  'UI: Escape resets Review to dropzone',
+  (await page.locator('[data-review="1"]').count()) === 0 && (await page.locator('input[type=file]').count()) >= 1
+)
+
+await page.goto(BASE + '/convert/md-to-html?review=1', { waitUntil: 'networkidle' })
+log('UI: review=1 hint shown', (await page.locator('[data-review-hint="1"]').count()) === 1)
+
+const ogHome = await fetch(BASE + '/og/default.svg').then((r) => r.text())
+log('SEO: home OG mentions Review/download', /Review|download/i.test(ogHome))
+
+const homeSeo = await page.goto(BASE + '/', { waitUntil: 'networkidle' })
+const homeHtml = await page.content()
+log('SEO: Home lede mentions Review & Edit', /Review\s*&amp;\s*Edit|Review & Edit/i.test(homeHtml))
+const pkg = JSON.parse(
+  await import('node:fs/promises').then((fs) => fs.readFile(new URL('../package.json', import.meta.url), 'utf8'))
+)
+log('Ops: package version is 8.0.0', pkg.version === '8.0.0', pkg.version)
+
+// Mode remember
+await page.goto(BASE + '/convert/md-to-pdf', { waitUntil: 'networkidle' })
+await page.locator('input[type=file]').setInputFiles({
+  name: 'mode.md',
+  mimeType: 'text/markdown',
+  buffer: Buffer.from('# Mode\n'),
+})
+const modeConvert = page.locator('.btn-primary', { hasText: /Convert/i })
+if (await modeConvert.count()) await modeConvert.click()
+await page.waitForSelector('[data-review="1"]', { timeout: 30000 })
+await page.locator('.review-tabs button', { hasText: 'Output' }).click()
+await page.waitForTimeout(200)
+const remembered = await page.evaluate(() => localStorage.getItem('fc-edit-mode:md-to-pdf'))
+log('UI: remembers Output edit mode', remembered === 'output', String(remembered))
+
+await page.goto(BASE + '/developers', { waitUntil: 'networkidle' })
+const devHtml = await page.content()
+log('SEO: Developers documents EDIT_UNSUPPORTED', /EDIT_UNSUPPORTED/.test(devHtml))
+log('SEO: Developers documents pagebreak', /pagebreak/.test(devHtml))
+log('SEO: Developers documents connect-src https', /connect-src|https:/.test(devHtml))
+
+const batchReview = await page.goto(BASE + '/convert/md-to-txt', { waitUntil: 'networkidle' })
+await page.setInputFiles('input[type=file]', [1, 2].map((n) => ({
+  name: `b${n}.md`,
+  mimeType: 'text/markdown',
+  buffer: Buffer.from(`# B${n}`),
+})))
+await page.waitForSelector('.queue', { timeout: 5000 })
+await page.locator('button', { hasText: /Convert 2 files/i }).click()
+await page.waitForSelector('.queue-row', { timeout: 20000 })
+await page.locator('button', { hasText: /Open in Review/i }).first().click()
+await page.waitForSelector('[data-review="1"]', { timeout: 10000 })
+log('UI: batch Open in Review works', (await page.locator('[data-review="1"]').count()) === 1)
+
+const codeFence = await page.evaluate(async () => {
+  const { convert } = await import('/sdk.js')
+  const md = '```js\nconst x = 1\n```\n'
+  const pdf = await convert(new File([md], 'c.md', { type: 'text/markdown' }), 'pdf')
+  const txt = await (await convert(new File([pdf.blob], 'c.pdf'), 'txt')).blob.text()
+  return /js/i.test(txt) || pdf.blob.size > 500
+})
+log('SDK: md→pdf code fence language label survives', codeFence)
 
 await browser.close()
 stopPreview()

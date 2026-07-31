@@ -5,7 +5,7 @@ import { userFacingMessage, isAbortError } from '../lib/errors.js'
 import Dropzone from './Dropzone.jsx'
 import ProgressBar from './ProgressBar.jsx'
 import OptionsPanel from './OptionsPanel.jsx'
-import ResultPanel from './ResultPanel.jsx'
+import ReviewEditor from './ReviewEditor.jsx'
 import { formatBytes, downloadBlob } from '../lib/format.js'
 import { pushRecent } from '../lib/recent.js'
 
@@ -54,6 +54,7 @@ export default function ConverterWidget({ from, to, initialFile = null, onResult
   const [error, setError] = useState('')
   const [parallel, setParallel] = useState(true)
   const abortRef = useRef(null)
+  const autoDownloadRef = useRef(false)
 
   const hint = useMemo(
     () =>
@@ -91,6 +92,10 @@ export default function ConverterWidget({ from, to, initialFile = null, onResult
         setResult(res)
         setStatus('done')
         onResult?.(res)
+        if (autoDownloadRef.current) {
+          autoDownloadRef.current = false
+          downloadBlob(res.blob, res.filename)
+        }
       } else {
         const results = await convertMany(theFiles, to, {
           ...opts,
@@ -291,6 +296,19 @@ export default function ConverterWidget({ from, to, initialFile = null, onResult
             <button className="btn btn-primary" onClick={() => run(files, options)}>
               Convert {files.length > 1 ? `${files.length} files ` : ''}to {FORMATS[to].label}
             </button>
+            {files.length === 1 && (
+              <button
+                type="button"
+                className="btn"
+                data-download-now="1"
+                onClick={() => {
+                  autoDownloadRef.current = true
+                  run(files, options)
+                }}
+              >
+                Download now
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -307,9 +325,18 @@ export default function ConverterWidget({ from, to, initialFile = null, onResult
       )}
 
       {status === 'done' && result && (
-        <div className="result">
-          <ResultPanel result={result} onReset={reset} sourceFile={files[0] || null} />
-        </div>
+        <ReviewEditor
+          from={from}
+          to={to}
+          sourceFile={files[0] || null}
+          result={result}
+          options={options}
+          onReset={reset}
+          onResult={(res) => {
+            setResult(res)
+            onResult?.(res)
+          }}
+        />
       )}
 
       {status === 'done' && batch && (
@@ -352,12 +379,25 @@ export default function ConverterWidget({ from, to, initialFile = null, onResult
                   {entry.file.name}
                 </span>
                 {entry.ok ? (
-                  <button
-                    className="btn-link"
-                    onClick={() => downloadBlob(entry.result.blob, entry.result.filename)}
-                  >
-                    Download {entry.result.filename.split('.').pop().toUpperCase()}
-                  </button>
+                  <>
+                    <button
+                      className="btn-link"
+                      onClick={() => downloadBlob(entry.result.blob, entry.result.filename)}
+                    >
+                      Download {entry.result.filename.split('.').pop().toUpperCase()}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-link"
+                      onClick={() => {
+                        setBatch(null)
+                        setFiles([entry.file])
+                        setResult(entry.result)
+                      }}
+                    >
+                      Open in Review
+                    </button>
+                  </>
                 ) : (
                   <span className="error queue-error" role="status">
                     {entry.error?.code ? `${entry.error.code}: ` : ''}

@@ -11,6 +11,8 @@ export const ErrorCodes = {
   ENGINE_MISSING: 'ENGINE_MISSING',
   PARSE_FAILED: 'PARSE_FAILED',
   ENCRYPT_PDF: 'ENCRYPT_PDF',
+  EDIT_TOO_LARGE: 'EDIT_TOO_LARGE',
+  EDIT_UNSUPPORTED: 'EDIT_UNSUPPORTED',
   UNKNOWN: 'UNKNOWN',
 }
 
@@ -46,6 +48,14 @@ const COPY = {
   [ErrorCodes.ENCRYPT_PDF]: {
     title: 'This PDF is password-protected',
     hint: 'Use the Unlock PDF tool with the correct password, then try again.',
+  },
+  [ErrorCodes.EDIT_TOO_LARGE]: {
+    title: 'Too large to edit in the browser',
+    hint: 'Download the file as-is, or convert a smaller document.',
+  },
+  [ErrorCodes.EDIT_UNSUPPORTED]: {
+    title: 'Editing is not available for this format',
+    hint: 'You can still preview and download. Use Tools for trim/crop/redact where listed.',
   },
   [ErrorCodes.UNKNOWN]: {
     title: 'Something went wrong',

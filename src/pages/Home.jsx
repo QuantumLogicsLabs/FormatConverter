@@ -134,7 +134,8 @@ export default function Home() {
         <p className="home-kicker">Quantum Logics</p>
         <h1 className="home-brand">FormatConvert</h1>
         <p className="home-lede">
-          Convert files in your browser. Nothing is uploaded — every conversion stays on your device.
+          Convert files in your browser — then Review &amp; Edit before you download. Nothing is
+          uploaded; every conversion stays on your device.
         </p>
         <p className="home-stats">
           {formatCount} formats · {pairCount} conversion pairs

@@ -3,6 +3,7 @@
 A universal file converter that runs entirely in the browser — deployed at
 [formatconvert.quantumlogicslimited.com](https://formatconvert.quantumlogicslimited.com).
 No server, no uploads: every conversion is a real parse + re-render done locally with JavaScript.
+After convert, **Review & Edit** lets you tweak the source or output before a simple Download.
 
 Guides for integrators and contributors: [`docs/`](./docs/README.md).
 
