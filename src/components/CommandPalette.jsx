@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FORMATS, listConversions, listTools } from '../converters/index.js'
 import { trapTabKey } from '../lib/focusTrap.js'
+import { getLastReviewMeta, getLiveSession } from '../lib/editSession.js'
 
 /**
  * Ctrl/Cmd+K command palette — jump to convert pairs and tools.
@@ -27,8 +28,27 @@ export default function CommandPalette() {
       path: `/tools/${t.id}`,
       kind: 'tool',
     }))
-    return [...pairs, ...tools]
-  }, [])
+    const extra = []
+    const last = getLastReviewMeta()
+    if (last?.from && last?.to) {
+      extra.push({
+        id: 'review-last',
+        label: `Review last: ${FORMATS[last.from]?.label || last.from} → ${FORMATS[last.to]?.label || last.to}`,
+        path: `/convert/${last.from}-to-${last.to}?review=1`,
+        kind: 'review',
+      })
+    }
+    if (getLiveSession()) {
+      const s = getLiveSession()
+      extra.unshift({
+        id: 'review-live',
+        label: 'Review current result',
+        path: `/convert/${s.from}-to-${s.to}?review=1`,
+        kind: 'review',
+      })
+    }
+    return [...extra, ...pairs, ...tools]
+  }, [open])
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase().replace(/\s+/g, ' ')

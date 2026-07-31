@@ -285,6 +285,15 @@ const { blob, filename } = await runTool('merge-pdf', pdfFiles)`}
             our servers (there are none).
           </li>
           <li>
+            <strong>v8 production:</strong> Review &amp; Edit after every single-file convert —
+            Source (IR + live re-convert) and Output editors (text, image annotate, best-effort PDF
+            page tools), always with Download. Markdown→PDF embeds <code>data:</code> /{' '}
+            <code>blob:</code> / <code>https:</code> images (CSP <code>connect-src</code> allows{' '}
+            <code>https:</code>) and honors <code>&lt;!-- pagebreak --&gt;</code>. Media/archive pairs
+            stay preview-only (<code>EDIT_UNSUPPORTED</code>). Review is app UI only — the SDK convert
+            API is unchanged; embedders build their own edit UX.
+          </li>
+          <li>
             <strong>v7 production:</strong> cross-origin embed via <code>frame-ancestors *</code>,
             preferred <code>parentOrigin</code> on <code>/embed</code>, modular <code>/sdk.js</code>{' '}
             facade with on-demand <code>/sdk/*</code> chunks (facade gzip budget), plus XLS/ODS/SVG-out/AAC,

@@ -142,3 +142,25 @@ describe('registry invariants', () => {
     }
   })
 })
+
+describe('editProfiles', () => {
+  it('md→pdf is dual editable', async () => {
+    const { getEditorProfile } = await import('../../src/lib/editProfiles.js')
+    const p = getEditorProfile('md', 'pdf')
+    assert.equal(p.editable, true)
+    assert.ok(p.sourceModes.includes('text'))
+    assert.ok(p.outputModes.includes('pdf'))
+  })
+  it('wav→mp3 is EDIT_UNSUPPORTED profile', async () => {
+    const { getEditorProfile } = await import('../../src/lib/editProfiles.js')
+    const p = getEditorProfile('wav', 'mp3')
+    assert.equal(p.editable, false)
+    assert.equal(p.profile, 'binary-av')
+  })
+  it('csv→json has table source', async () => {
+    const { getEditorProfile } = await import('../../src/lib/editProfiles.js')
+    const p = getEditorProfile('csv', 'json')
+    assert.ok(p.sourceModes.includes('table'))
+    assert.ok(p.outputModes.includes('text'))
+  })
+})

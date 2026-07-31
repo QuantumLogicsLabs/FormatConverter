@@ -3,7 +3,13 @@ import { downloadBlob, formatBytes } from '../lib/format.js'
 
 const BITMAP_TYPES = /^(image\/(png|jpeg|jpg|webp|gif|bmp|avif|tiff))$/i
 
-export default function ResultPanel({ result, onReset, sourceFile = null }) {
+export default function ResultPanel({
+  result,
+  onReset,
+  sourceFile = null,
+  hideDownload = false,
+  hideReset = false,
+}) {
   const { blob, filename } = result
   const isText = blob.type.startsWith('text/') || blob.type === 'application/json'
   const isImage = blob.type.startsWith('image/') && blob.type !== 'image/x-icon'
@@ -60,9 +66,11 @@ export default function ResultPanel({ result, onReset, sourceFile = null }) {
               {copied ? 'Copied!' : 'Copy'}
             </button>
           )}
-          <button className="btn btn-primary" onClick={() => downloadBlob(blob, filename)}>
-            Download {filename.split('.').pop().toUpperCase()}
-          </button>
+          {!hideDownload && (
+            <button className="btn btn-primary" onClick={() => downloadBlob(blob, filename)}>
+              Download {filename.split('.').pop().toUpperCase()}
+            </button>
+          )}
         </div>
       </div>
 
@@ -112,11 +120,13 @@ export default function ResultPanel({ result, onReset, sourceFile = null }) {
         </p>
       )}
 
-      <p className="convert-again">
-        <button className="btn-link" onClick={onReset}>
-          Convert another file
-        </button>
-      </p>
+      {!hideReset && (
+        <p className="convert-again">
+          <button className="btn-link" onClick={onReset}>
+            Convert another file
+          </button>
+        </p>
+      )}
     </>
   )
 }

@@ -858,6 +858,98 @@ body {
   accent-color: var(--accent);
 }
 
+.editor-pane {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-top: 16px;
+}
+
+.editor-pane-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.editor-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.pdf-thumb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.pdf-thumb {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  background: var(--bg-primary);
+  text-align: center;
+  transition: opacity 0.15s ease;
+}
+
+.pdf-thumb-deleting {
+  opacity: 0.4;
+}
+
+.pdf-thumb-img {
+  max-width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  transition: transform 0.15s ease;
+}
+
+.pdf-thumb-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.pdf-ops-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pdf-ops-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.image-output-canvas-wrap {
+  padding: 0;
+  overflow: auto;
+}
+
+.image-output-canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  cursor: crosshair;
+  touch-action: none;
+}
+
 .preview-frame {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
@@ -1375,6 +1467,103 @@ body {
 .skip-link:focus {
   left: 12px;
   top: 12px;
+}
+
+.review-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.review-title {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+}
+
+.review-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-active {
+  background: var(--accent);
+  color: var(--accent-ink, #fff);
+  border-color: transparent;
+}
+
+.review-edit {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 900px) {
+  .review-edit {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+.editor-pane {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  background: var(--bg-secondary);
+}
+
+.editor-pane-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.editor-textarea {
+  min-height: 280px;
+  width: 100%;
+}
+
+.editor-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.table-editor-scroll {
+  overflow: auto;
+  max-height: 360px;
+}
+
+.edit-grid {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.edit-grid th,
+.edit-grid td {
+  border: 1px solid var(--border-color);
+  padding: 0;
+}
+
+.edit-grid input {
+  width: 100%;
+  min-width: 80px;
+  border: 0;
+  padding: 6px 8px;
+  background: var(--bg-primary);
+  color: var(--text-main);
+  font: inherit;
 }
 
 @media (prefers-reduced-motion: reduce) {

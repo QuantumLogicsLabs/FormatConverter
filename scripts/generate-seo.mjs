@@ -150,8 +150,8 @@ routes.push({
   description: HOME_DESCRIPTION,
   breadcrumbs: [{ name: 'Home', url: `${ORIGIN}/` }],
   ogName: 'default.svg',
-  ogTitle: 'Convert files in your browser',
-  ogSubtitle: 'Documents, images, data, media — nothing uploaded',
+  ogTitle: 'Convert & edit files in your browser',
+  ogSubtitle: 'Review before download — documents, images, data, media — nothing uploaded',
 })
 
 routes.push({
