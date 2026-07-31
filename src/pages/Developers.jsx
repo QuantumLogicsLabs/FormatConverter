@@ -258,7 +258,7 @@ const tools = listTools() // [{ id, label, description, inputs, output, options 
 const { blob, filename } = await runTool('merge-pdf', pdfFiles)`}
         />
         {tools.length === 0 ? (
-          <p className="meta">No multi-input tools registered yet — coming in later v4 phases.</p>
+          <p className="meta">No multi-input tools registered.</p>
         ) : (
           <ul className="docs-notes">
             {tools.map((t) => (
@@ -279,6 +279,12 @@ const { blob, filename } = await runTool('merge-pdf', pdfFiles)`}
             our servers (there are none).
           </li>
           <li>
+            <strong>v6 production:</strong> typed errors with recovery hints, AbortSignal cancel for
+            convert/tools, worker terminate on abort (no OOM→main retry), CI + worker gzip budget,
+            CSP/security headers, command palette (Ctrl/Cmd+K), favorites, embed{' '}
+            <code>parentOrigin</code> / height messages, and <code>formatconvert.d.ts</code>.
+          </li>
+          <li>
             <strong>SDK threading:</strong> the public <code>/sdk.js</code> bundle always runs
             converters on the main thread. Cross-origin module workers are not constructible, so
             worker routing is app-only. Heavy work (pdf.js, Tesseract, ffmpeg) still uses each
@@ -296,18 +302,15 @@ const { blob, filename } = await runTool('merge-pdf', pdfFiles)`}
             from the tesseract.js data CDN.
           </li>
           <li>
-            <strong>Data formats:</strong> CSV/TSV/XLSX use a shared tabular model. JSON/YAML/TOML/XML
-            preserve tree types when converting among themselves; non-tabular trees refuse
-            table targets with an actionable error. XML attributes use the <code>@_</code> prefix.
-            TIFF encode is uncompressed. SheetJS (XLSX) stays on the main thread; other data pairs
-            can run in the app worker.
+            <strong>Data formats:</strong> CSV/TSV/XLSX/JSONL/INI use shared tabular or tree models.
+            JSON/YAML/TOML/XML/INI preserve structure when converting among themselves. SheetJS (XLSX)
+            stays on the main thread; other data pairs can run in the app worker.
           </li>
           <li>
             <strong>Audio &amp; video:</strong> powered by single-thread ffmpeg.wasm (~31 MB,
             cached in IndexedDB after the first download from <code>{ORIGIN}/ffmpeg/</code>).
             Keep media under ~500 MB (hard refuse above 600 MB). Video can extract to
-            mp3/wav/ogg/flac/m4a. WebM output is gated on libvpx in the bundled core — if missing,
-            use MP4.
+            mp3/wav/ogg/flac/m4a/opus. WebM/Opus output is gated on encoders in the bundled core.
           </li>
           <li>
             <strong>SEO shells:</strong> build-time prerender writes static HTML under{' '}

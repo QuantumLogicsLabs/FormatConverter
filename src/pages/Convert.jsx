@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { FORMATS, getConversion } from '../converters/index.js'
 import { takePendingFile } from '../lib/pendingFile.js'
+import { isFavorite, toggleFavorite } from '../lib/favorites.js'
 import ConverterWidget from '../components/ConverterWidget.jsx'
 import ConverterFaq from '../components/ConverterFaq.jsx'
 import Seo from '../components/Seo.jsx'
@@ -16,6 +17,7 @@ export default function Convert() {
   const entry = from && to ? getConversion(from, to) : null
 
   const initialFile = useMemo(() => takePendingFile(), [])
+  const [fav, setFav] = useState(() => (from && to ? isFavorite(from, to) : false))
 
   if (!entry) return <NotFound />
 
@@ -41,6 +43,16 @@ export default function Convert() {
         </p>
         <h1>{title} Converter</h1>
         <p>{description}</p>
+        <p>
+          <button
+            type="button"
+            className="btn-link"
+            onClick={() => setFav(toggleFavorite(from, to))}
+            aria-pressed={fav}
+          >
+            {fav ? '★ Favorited' : '☆ Add to favorites'}
+          </button>
+        </p>
         {FORMATS[from].kind === 'image' && to === 'pdf' && (
           <p className="meta">
             <Link to="/tools/images-to-pdf">Combine into one PDF instead →</Link>

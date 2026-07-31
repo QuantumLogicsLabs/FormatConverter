@@ -12,7 +12,7 @@ export const WORKER_LOADERS = {
 }
 
 // xlsx intentionally omitted — runs on main thread
-const DATA = ['csv', 'tsv', 'json', 'yaml', 'toml', 'xml']
+const DATA = ['csv', 'tsv', 'json', 'jsonl', 'yaml', 'toml', 'ini', 'xml']
 const DATA_OUT = [...DATA, 'md', 'html', 'txt']
 const loadData = () => import('../converters/data/convert.js')
 for (const from of DATA) {
@@ -29,6 +29,18 @@ for (const from of SUBS) {
     if (from === to) continue
     WORKER_LOADERS[`${from}:${to}`] = loadSubs
   }
+}
+
+const loadRtf = () => import('../converters/docs/rtfConvert.js')
+for (const [from, to] of [
+  ['rtf', 'txt'],
+  ['rtf', 'md'],
+  ['rtf', 'html'],
+  ['txt', 'rtf'],
+  ['md', 'rtf'],
+  ['html', 'rtf'],
+]) {
+  WORKER_LOADERS[`${from}:${to}`] = loadRtf
 }
 
 const loadEpubOut = () => import('../converters/ebook/epubOut.js')

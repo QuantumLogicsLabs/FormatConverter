@@ -226,3 +226,85 @@ registerTool('page-numbers-pdf', {
   ],
   load: () => import('./pdf/pageNumbersPdf.js'),
 })
+
+const IMAGE_TOOL_FORMATS = ['png', 'jpg', 'webp', 'bmp', 'gif', 'svg', 'heic', 'ico', 'tiff', 'avif']
+
+registerTool('rotate-image', {
+  label: 'Rotate image',
+  description: 'Rotate an image by 90°, 180°, or 270°.',
+  inputs: { formats: IMAGE_TOOL_FORMATS, min: 1, max: 1, ordered: false },
+  output: 'png',
+  options: [
+    {
+      key: 'angle',
+      label: 'Rotation',
+      type: 'select',
+      default: 90,
+      choices: [
+        { value: 90, label: '90° clockwise' },
+        { value: 180, label: '180°' },
+        { value: 270, label: '270° clockwise' },
+      ],
+    },
+  ],
+  load: () => import('./images/rotateImage.js'),
+})
+
+registerTool('crop-image', {
+  label: 'Crop image',
+  description: 'Crop an image to a pixel rectangle (x, y, width, height).',
+  inputs: { formats: IMAGE_TOOL_FORMATS, min: 1, max: 1, ordered: false },
+  output: 'png',
+  options: [
+    { key: 'x', label: 'X', type: 'number', default: 0, min: 0 },
+    { key: 'y', label: 'Y', type: 'number', default: 0, min: 0 },
+    { key: 'width', label: 'Width', type: 'number', default: 100, min: 1 },
+    { key: 'height', label: 'Height', type: 'number', default: 100, min: 1 },
+  ],
+  load: () => import('./images/cropImage.js'),
+})
+
+registerTool('trim-audio', {
+  label: 'Trim audio',
+  description: 'Cut a clip from an audio file (start + duration in seconds).',
+  inputs: { formats: ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'opus'], min: 1, max: 1, ordered: false },
+  output: 'mp3',
+  options: [
+    { key: 'start', label: 'Start (s)', type: 'number', default: 0, min: 0 },
+    { key: 'duration', label: 'Duration (s)', type: 'number', default: 5, min: 0.1 },
+  ],
+  load: () => import('./av/trimAudio.js'),
+})
+
+registerTool('normalize-audio', {
+  label: 'Normalize audio',
+  description: 'Loudness-normalize audio to MP3 with ffmpeg loudnorm.',
+  inputs: { formats: ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'opus'], min: 1, max: 1, ordered: false },
+  output: 'mp3',
+  load: () => import('./av/normalizeAudio.js'),
+})
+
+registerTool('redact-pdf', {
+  label: 'Redact PDF pages',
+  description: 'Cover selected pages with a solid black rectangle.',
+  inputs: { formats: ['pdf'], min: 1, max: 1, ordered: false },
+  output: 'pdf',
+  options: [OPT_PAGES],
+  load: () => import('./pdf/redactPdf.js'),
+})
+
+registerTool('zip-files', {
+  label: 'Zip files',
+  description: 'Pack multiple files into one .zip archive.',
+  inputs: { formats: [], min: 1, max: 100, ordered: true },
+  output: 'zip',
+  load: () => import('./pdf/zipFiles.js'),
+})
+
+registerTool('unzip', {
+  label: 'Unzip',
+  description: 'Extract a zip into a flat zip of its files (browser-friendly).',
+  inputs: { formats: ['zip'], min: 1, max: 1, ordered: false },
+  output: 'zip',
+  load: () => import('./pdf/unzipFiles.js'),
+})

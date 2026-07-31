@@ -1,6 +1,7 @@
 import { FORMATS, getConversion, targetsFor, listConversions, KINDS, sourcesForKind } from './registry.js'
 import { detectFormat } from './detect.js'
 import { getTool, listTools as listRegisteredTools, TOOLS } from './tools.js'
+import { FormatConvertError, ErrorCodes, isOomMessage, isAbortError, toFormatConvertError } from '../lib/errors.js'
 
 export {
   FORMATS,
@@ -12,6 +13,9 @@ export {
   sourcesForKind,
   getTool,
   TOOLS,
+  FormatConvertError,
+  ErrorCodes,
+  toFormatConvertError,
 }
 
 export { getLastFFmpegLoadSource, resetFFmpeg, assertAvFileSize } from './av/engine.js'
@@ -22,7 +26,9 @@ function baseName(name = 'converted') {
 }
 
 function throwIfAborted(signal) {
-  if (signal?.aborted) throw new DOMException('Conversion aborted.', 'AbortError')
+  if (signal?.aborted) {
+    throw new FormatConvertError(ErrorCodes.ABORTED, 'Conversion cancelled.')
+  }
 }
 
 async function runOnMain(entry, file, from, to, opts, onProgress) {
@@ -50,6 +56,14 @@ async function runViaWorker(entry, file, from, to, opts, onProgress, signal) {
   return { blob: new Blob([out.buffer], { type: out.type }), ext: out.ext }
 }
 
+function shouldFallbackToMain(err, signal) {
+  if (signal?.aborted || isAbortError(err)) return false
+  if (isOomMessage(err?.message)) return false
+  if (err?.code === ErrorCodes.OOM || err?.code === ErrorCodes.TOO_LARGE) return false
+  // Only recover from worker construct / messaging failures
+  return true
+}
+
 /**
  * Convert a File/Blob to another format.
  *
@@ -62,35 +76,54 @@ async function runViaWorker(entry, file, from, to, opts, onProgress, signal) {
  * @returns {Promise<{ blob: Blob, filename: string, from: string, to: string }>}
  */
 export async function convert(file, to, options = {}) {
-  if (!file) throw new Error('No input file given.')
+  if (!file) throw new FormatConvertError(ErrorCodes.DETECT_FAILED, 'No input file given.')
   const { from: explicitFrom, onProgress, signal, ...opts } = options
   throwIfAborted(signal)
 
-  const from = explicitFrom || (await detectFormat(file))
-  if (!from || !FORMATS[from]) {
-    throw new Error('Could not detect the input format. Pass options.from explicitly.')
+  let from
+  try {
+    from = explicitFrom || (await detectFormat(file))
+  } catch (e) {
+    throw toFormatConvertError(e)
   }
-  if (!FORMATS[to]) throw new Error(`Unknown target format "${to}".`)
-  if (from === to) throw new Error(`File is already ${FORMATS[to].label}.`)
+  if (!from || !FORMATS[from]) {
+    throw new FormatConvertError(
+      ErrorCodes.DETECT_FAILED,
+      'Could not detect the input format. Pass options.from explicitly.'
+    )
+  }
+  if (!FORMATS[to]) {
+    throw new FormatConvertError(ErrorCodes.UNSUPPORTED_PAIR, `Unknown target format "${to}".`)
+  }
+  if (from === to) {
+    throw new FormatConvertError(ErrorCodes.UNSUPPORTED_PAIR, `File is already ${FORMATS[to].label}.`)
+  }
 
   const entry = getConversion(from, to)
   if (!entry) {
-    throw new Error(`Conversion ${FORMATS[from].label} → ${FORMATS[to].label} is not supported.`)
+    throw new FormatConvertError(
+      ErrorCodes.UNSUPPORTED_PAIR,
+      `Conversion ${FORMATS[from].label} → ${FORMATS[to].label} is not supported.`
+    )
   }
 
   const report = onProgress || (() => {})
   const passOpts = { ...opts, signal }
   let result
   const useWorker = entry.env === 'worker' && typeof __SDK__ !== 'undefined' && !__SDK__
-  if (useWorker) {
-    try {
-      result = await runViaWorker(entry, file, from, to, passOpts, report, signal)
-    } catch (e) {
-      if (e?.name === 'AbortError' || signal?.aborted) throw e
+  try {
+    if (useWorker) {
+      try {
+        result = await runViaWorker(entry, file, from, to, passOpts, report, signal)
+      } catch (e) {
+        if (!shouldFallbackToMain(e, signal)) throw toFormatConvertError(e)
+        result = await runOnMain(entry, file, from, to, passOpts, report)
+      }
+    } else {
       result = await runOnMain(entry, file, from, to, passOpts, report)
     }
-  } else {
-    result = await runOnMain(entry, file, from, to, passOpts, report)
+  } catch (e) {
+    throw toFormatConvertError(e)
   }
 
   throwIfAborted(signal)
@@ -128,7 +161,7 @@ export async function convertMany(files, to, options = {}) {
         const result = await convert(file, to, { ...opts, signal, onProgress: report })
         results[i] = { file, ok: true, result }
       } catch (error) {
-        if (error?.name === 'AbortError') {
+        if (isAbortError(error)) {
           results[i] = { file, ok: false, error, aborted: true }
           throw error
         }
@@ -141,13 +174,13 @@ export async function convertMany(files, to, options = {}) {
   try {
     await Promise.all(pool)
   } catch (e) {
-    if (e?.name === 'AbortError') {
+    if (isAbortError(e)) {
       for (let i = 0; i < list.length; i++) {
         if (!results[i]) {
           results[i] = {
             file: list[i],
             ok: false,
-            error: new DOMException('Conversion aborted.', 'AbortError'),
+            error: new FormatConvertError(ErrorCodes.ABORTED, 'Conversion cancelled.'),
             aborted: true,
           }
         }
@@ -186,18 +219,24 @@ export async function zipResults(results, zipName = 'converted.zip') {
  */
 export async function runTool(toolId, files, options = {}) {
   const tool = getTool(toolId)
-  if (!tool) throw new Error(`Unknown tool "${toolId}".`)
+  if (!tool) throw new FormatConvertError(ErrorCodes.UNKNOWN, `Unknown tool "${toolId}".`)
 
   const list = Array.from(files || []).filter(Boolean)
   const { min = 1, max = Infinity, formats, ordered } = tool.inputs || {}
   if (list.length < min) {
-    throw new Error(`This tool needs at least ${min} file${min === 1 ? '' : 's'}.`)
+    throw new FormatConvertError(
+      ErrorCodes.UNKNOWN,
+      `This tool needs at least ${min} file${min === 1 ? '' : 's'}.`
+    )
   }
   if (list.length > max) {
-    throw new Error(`This tool accepts at most ${max} file${max === 1 ? '' : 's'}.`)
+    throw new FormatConvertError(
+      ErrorCodes.UNKNOWN,
+      `This tool accepts at most ${max} file${max === 1 ? '' : 's'}.`
+    )
   }
   if (!ordered && list.length === 0) {
-    throw new Error('No input files given.')
+    throw new FormatConvertError(ErrorCodes.DETECT_FAILED, 'No input files given.')
   }
 
   if (formats?.length) {
@@ -205,22 +244,29 @@ export async function runTool(toolId, files, options = {}) {
       const detected = await detectFormat(file)
       if (!formats.includes(detected)) {
         const labels = formats.map((f) => FORMATS[f]?.label || f).join(', ')
-        throw new Error(`Expected ${labels} input, got ${FORMATS[detected]?.label || 'unknown'}.`)
+        throw new FormatConvertError(
+          ErrorCodes.DETECT_FAILED,
+          `Expected ${labels} input, got ${FORMATS[detected]?.label || 'unknown'}.`
+        )
       }
     }
   }
 
   const { onProgress, signal, ...opts } = options
   throwIfAborted(signal)
-  const mod = await tool.load()
-  const result = await mod.default(list, { ...opts, signal }, onProgress || (() => {}))
-  throwIfAborted(signal)
-  const blob = result instanceof Blob ? result : result.blob
-  const ext = result instanceof Blob ? (FORMATS[tool.output]?.exts?.[0] || tool.output) : result.ext
-  const filename = result instanceof Blob
-    ? `${toolId}.${ext}`
-    : (result.filename || `${toolId}.${ext}`)
-  return { blob, filename, tool: toolId }
+  try {
+    const mod = await tool.load()
+    const result = await mod.default(list, { ...opts, signal }, onProgress || (() => {}))
+    throwIfAborted(signal)
+    const blob = result instanceof Blob ? result : result.blob
+    const ext = result instanceof Blob ? (FORMATS[tool.output]?.exts?.[0] || tool.output) : result.ext
+    const filename = result instanceof Blob
+      ? `${toolId}.${ext}`
+      : (result.filename || `${toolId}.${ext}`)
+    return { blob, filename, tool: toolId }
+  } catch (e) {
+    throw toFormatConvertError(e)
+  }
 }
 
 export function listTools() {

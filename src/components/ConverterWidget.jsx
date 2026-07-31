@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { convert, convertMany, zipResults, FORMATS, getConversion } from '../converters/index.js'
 import { acceptFor } from '../converters/registry.js'
+import { userFacingMessage, isAbortError } from '../lib/errors.js'
 import Dropzone from './Dropzone.jsx'
 import ProgressBar from './ProgressBar.jsx'
 import OptionsPanel from './OptionsPanel.jsx'
@@ -39,7 +40,7 @@ function saveOptions(pair, values) {
  * page hand a file straight in; `onResult` lets the embed page forward
  * results to its parent.
  */
-export default function ConverterWidget({ from, to, initialFile = null, onResult, single = false }) {
+export default function ConverterWidget({ from, to, initialFile = null, onResult, onProgress, single = false }) {
   const pair = `${from}-${to}`
   const entry = getConversion(from, to)
   const schema = entry?.options || []
@@ -67,6 +68,11 @@ export default function ConverterWidget({ from, to, initialFile = null, onResult
     [files]
   )
 
+  const reportProgress = (p) => {
+    setProgress(p)
+    onProgress?.(p)
+  }
+
   const run = async (theFiles, opts) => {
     setStatus('converting')
     setProgress(null)
@@ -78,7 +84,7 @@ export default function ConverterWidget({ from, to, initialFile = null, onResult
       if (theFiles.length === 1) {
         const res = await convert(theFiles[0], to, {
           ...opts,
-          onProgress: setProgress,
+          onProgress: reportProgress,
           signal: ac.signal,
         })
         pushRecent(from, to)
@@ -88,7 +94,7 @@ export default function ConverterWidget({ from, to, initialFile = null, onResult
       } else {
         const results = await convertMany(theFiles, to, {
           ...opts,
-          onProgress: setProgress,
+          onProgress: reportProgress,
           signal: ac.signal,
           concurrency: parallel ? 2 : 1,
         })
@@ -97,12 +103,12 @@ export default function ConverterWidget({ from, to, initialFile = null, onResult
         setStatus('done')
       }
     } catch (err) {
-      if (err?.name === 'AbortError' || ac.signal.aborted) {
-        setError('Conversion cancelled.')
+      if (isAbortError(err) || ac.signal.aborted) {
+        setError(userFacingMessage(err))
         setStatus('error')
         return
       }
-      setError(err.message || 'Conversion failed.')
+      setError(userFacingMessage(err))
       setStatus('error')
     } finally {
       abortRef.current = null
@@ -302,7 +308,7 @@ export default function ConverterWidget({ from, to, initialFile = null, onResult
 
       {status === 'done' && result && (
         <div className="result">
-          <ResultPanel result={result} onReset={reset} />
+          <ResultPanel result={result} onReset={reset} sourceFile={files[0] || null} />
         </div>
       )}
 

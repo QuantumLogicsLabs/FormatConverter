@@ -7,6 +7,8 @@ import { parseJson, jsonToTable, tableToJsonBlob, valueToJsonBlob, cloneValue } 
 import { parseYamlFile, yamlToTable, tableToYamlBlob, valueToYamlBlob } from './yaml.js'
 import { parseTomlFile, tomlToTable, tableToTomlBlob, valueToTomlBlob } from './toml.js'
 import { parseXml, xmlToTable, tableToXmlBlob, valueToXmlBlob } from './xml.js'
+import { parseJsonl, jsonlToTable, valueToJsonlBlob, tableToJsonlBlob } from './jsonl.js'
+import { parseIniFile, iniToTable, valueToIniBlob, tableToIniBlob } from './ini.js'
 import { tableToMdBlob, tableToHtmlBlob, tableToMarkdown } from './renderTable.js'
 import { tableToObjects } from './tableModel.js'
 import JSZip from 'jszip'
@@ -20,16 +22,20 @@ async function toTable(file, from, options) {
     return single
   }
   if (from === 'json') return jsonToTable(await parseJson(file))
+  if (from === 'jsonl') return jsonlToTable(await parseJsonl(file))
   if (from === 'yaml') return yamlToTable(await parseYamlFile(file))
   if (from === 'toml') return tomlToTable(await parseTomlFile(file))
+  if (from === 'ini') return iniToTable(await parseIniFile(file))
   if (from === 'xml') return xmlToTable(await parseXml(file))
   throw new Error(`Unsupported data source "${from}".`)
 }
 
 async function fromTree(file, from) {
   if (from === 'json') return parseJson(file)
+  if (from === 'jsonl') return parseJsonl(file)
   if (from === 'yaml') return parseYamlFile(file)
   if (from === 'toml') return parseTomlFile(file)
+  if (from === 'ini') return parseIniFile(file)
   if (from === 'xml') return parseXml(file)
   if (from === 'csv' || from === 'tsv') {
     return tableToObjects(await fileToTable(file, DELIM[from]))
@@ -55,14 +61,16 @@ export default async function convertData(file, options = {}, onProgress = () =>
 
   const title = file.name?.replace(/\.[^.]+$/, '') || 'data'
 
-  // Tree ↔ tree (preserve types for json/yaml/toml/xml)
-  const treeFormats = new Set(['json', 'yaml', 'toml', 'xml'])
+  // Tree ↔ tree (preserve types for json/yaml/toml/xml/ini; jsonl is array)
+  const treeFormats = new Set(['json', 'yaml', 'toml', 'xml', 'ini', 'jsonl'])
   if (treeFormats.has(from) && treeFormats.has(to) && from !== to) {
     const value = cloneValue(await fromTree(file, from))
     onProgress({ stage: 'encode' })
     if (to === 'json') return valueToJsonBlob(value)
+    if (to === 'jsonl') return valueToJsonlBlob(value)
     if (to === 'yaml') return valueToYamlBlob(value)
     if (to === 'toml') return valueToTomlBlob(value)
+    if (to === 'ini') return valueToIniBlob(Array.isArray(value) ? { items: value } : value)
     if (to === 'xml') return valueToXmlBlob(value)
   }
 
@@ -101,8 +109,10 @@ export default async function convertData(file, options = {}, onProgress = () =>
   if (to === 'tsv') return tableToCsvBlob(table, '\t', 'text/tab-separated-values')
   if (to === 'xlsx') return tableToXlsxBlob(table)
   if (to === 'json') return tableToJsonBlob(table)
+  if (to === 'jsonl') return tableToJsonlBlob(table)
   if (to === 'yaml') return tableToYamlBlob(table)
   if (to === 'toml') return tableToTomlBlob(table)
+  if (to === 'ini') return tableToIniBlob(table)
   if (to === 'xml') return tableToXmlBlob(table)
   if (to === 'md') return tableToMdBlob(table, title)
   if (to === 'html') return tableToHtmlBlob(table, title)

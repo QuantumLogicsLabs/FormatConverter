@@ -16,7 +16,10 @@ Guides for integrators and contributors: [`docs/`](./docs/README.md).
 | Word (DOCX) | PDF, Markdown, TXT, HTML, EPUB |
 | TXT | PDF, Markdown, HTML, Word, EPUB |
 | Markdown | PDF, TXT, HTML, Word, EPUB |
-| HTML | PDF, Markdown, TXT, Word, EPUB |
+| HTML | PDF, Markdown, TXT, Word, EPUB, RTF |
+| RTF | TXT, Markdown, HTML |
+| ODT | TXT, Markdown, HTML |
+| PPTX | TXT, Markdown, PDF, PNG |
 | EPUB | HTML, Markdown, TXT, PDF, Word |
 
 - PDF → text rebuilds lines from character positions with **column-aware reading order**, paragraph
@@ -39,9 +42,11 @@ other languages stream on first use.
 | --- | --- |
 | PNG, JPEG, WebP, BMP, GIF, SVG, HEIC, ICO, TIFF, AVIF | PNG, JPEG, WebP, BMP, ICO, GIF, TIFF, AVIF, PDF |
 
-**Data** — CSV, TSV, Excel, JSON, YAML, TOML, XML (among themselves and to MD/HTML/TXT/PDF/DOCX).
+**Data** — CSV, TSV, Excel, JSON, JSONL/NDJSON, YAML, TOML, INI, XML (among themselves and to MD/HTML/TXT/PDF/DOCX).
 
-**Subtitles** — SRT, VTT, ASS, SSA, TXT. **Audio / video** — via ffmpeg.wasm (keep media under ~500 MB).
+**Subtitles** — SRT, VTT, ASS, SSA, TXT. **Audio / video** — mp3/wav/ogg/flac/m4a/opus and mp4/webm/mov/gif via ffmpeg.wasm (keep media under ~500 MB; WebM/Opus gated on encoder availability). Video pairs support optional scale width and mute.
+
+**Tools** — merge/split/rotate/reorder/extract/compress/watermark/page-numbers/redact PDF; images-to-pdf/gif; crop/rotate image; trim/normalize audio; zip/unzip.
 
 **Batch** — drop any number of files on a converter page; each converts independently with a
 per-file queue, and results download individually or as one zip. Also in the SDK as
@@ -56,7 +61,8 @@ use). Paste input with Ctrl+V; last-used options are remembered per conversion.
 - `/convert/:pair` — e.g. `/convert/pdf-to-md`, one page per conversion
 - `/tools/:tool` — merge/split/compress PDF and related tools
 - `/developers` — SDK & embed documentation for developers
-- `/embed` — chrome-less iframe widget (`?from=pdf&to=txt`), posts results to the parent window
+- `/embed` — chrome-less iframe widget (`?from=pdf&to=txt&parentOrigin=…`), posts `formatconvert:ready|progress|height|result` to the parent window
+- Ctrl/Cmd+K command palette; pin favorite converters on Home
 
 ## Developer SDK
 

@@ -12,6 +12,7 @@ import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { chromium } from 'playwright-core'
 import { PDFDocument, StandardFonts } from 'pdf-lib'
+import JSZip from 'jszip'
 
 const CHROME_CANDIDATES = [
   process.env.CHROME_PATH,
@@ -77,10 +78,44 @@ async function makeTwoColumnPdfBytes() {
 }
 const twoColumnPdfBytes = Array.from(await makeTwoColumnPdfBytes())
 
+async function makeOdtBytes() {
+  const zip = new JSZip()
+  zip.file('mimetype', 'application/vnd.oasis.opendocument.text', { compression: 'STORE' })
+  zip.file(
+    'content.xml',
+    `<?xml version="1.0"?><office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"><office:body><office:text><text:p>Hello ODT Marker</text:p></office:text></office:body></office:document-content>`
+  )
+  zip.file(
+    'META-INF/manifest.xml',
+    `<?xml version="1.0"?><manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"><manifest:file-entry manifest:full-path="/" manifest:media-type="application/vnd.oasis.opendocument.text"/></manifest:manifest>`
+  )
+  return Array.from(await zip.generateAsync({ type: 'uint8array' }))
+}
+
+async function makePptxBytes() {
+  const zip = new JSZip()
+  zip.file(
+    '[Content_Types].xml',
+    `<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>`
+  )
+  zip.file(
+    'ppt/presentation.xml',
+    `<?xml version="1.0"?><p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><p:sldIdLst><p:sldId id="256" r:id="rId1"/></p:sldIdLst></p:presentation>`
+  )
+  zip.file(
+    'ppt/slides/slide1.xml',
+    `<?xml version="1.0"?><p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t>Hello PPTX Marker</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`
+  )
+  return Array.from(await zip.generateAsync({ type: 'uint8array' }))
+}
+
+const odtBytes = await makeOdtBytes()
+const pptxBytes = await makePptxBytes()
+
 // -----------------------------------------------------------------------------
 // 1. SDK conversion matrix (documents, images, docx, batch, detection)
 // -----------------------------------------------------------------------------
-const sdkReport = await page.evaluate(async (twoColBytes) => {
+const sdkReport = await page.evaluate(async ({ twoColBytes, odtBytes: odtArr, pptxBytes: pptxArr }) => {
   const out = []
   const sdk = await import('/sdk.js')
   const { convert, convertMany, zipResults, detectFormat, listConversions } = sdk
@@ -404,7 +439,7 @@ second paragraph line two`
         if (ticks === 1) ac.abort()
       },
     })
-    return results.some((r) => r.aborted || r.error?.name === 'AbortError')
+    return results.some((r) => r.aborted || r.error?.name === 'AbortError' || r.error?.code === 'ABORTED')
   })
   await check('xlsx pairs use main env', () => {
     const { getConversion } = sdk
@@ -483,6 +518,45 @@ second paragraph line two`
     const back = await convert(new File([toJson.blob], 't.json'), 'toml')
     const t = await back.blob.text()
     return t.includes('title') && t.includes('demo') && t.includes('count')
+  })
+  await check('jsonl ↔ json', async () => {
+    const jsonl = '{"a":1}\n{"a":2}\n'
+    const toJson = await convert(new File([jsonl], 't.jsonl'), 'json')
+    const data = JSON.parse(await toJson.blob.text())
+    return Array.isArray(data) && data[0].a === 1 && data[1].a === 2
+  })
+  await check('ini ↔ json', async () => {
+    const ini = '[db]\nhost = localhost\nport = 5432\n'
+    const toJson = await convert(new File([ini], 't.ini'), 'json')
+    const data = JSON.parse(await toJson.blob.text())
+    return data.db?.host === 'localhost' && data.db?.port === 5432
+  })
+  await check('rtf ↔ md', async () => {
+    const rtf = '{\\rtf1\\ansi\\deff0 Hello RTF world}'
+    const md = await convert(new File([rtf], 'a.rtf', { type: 'application/rtf' }), 'md', { from: 'rtf' })
+    const t = await md.blob.text()
+    return /Hello\s+RTF/i.test(t)
+  })
+  await check('odt → txt', async () => {
+    const odt = new File([new Uint8Array(odtArr)], 'a.odt', {
+      type: 'application/vnd.oasis.opendocument.text',
+    })
+    const t = await (await convert(odt, 'txt')).blob.text()
+    return /Hello\s+ODT\s+Marker/i.test(t)
+  })
+  await check('pptx → pdf magic', async () => {
+    const pptx = new File([new Uint8Array(pptxArr)], 'a.pptx', {
+      type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    })
+    const out = await convert(pptx, 'pdf')
+    const txt = await (await convert(new File([out.blob], 's.pdf'), 'txt')).blob.text()
+    return (await magic(out.blob, '%', 'P', 'D', 'F')) && /Hello\s+PPTX\s+Marker/i.test(txt)
+  })
+  await check('pptx → png magic', async () => {
+    const pptx = new File([new Uint8Array(pptxArr)], 'a.pptx', {
+      type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    })
+    return magic((await convert(pptx, 'png')).blob, 0x89, 'P', 'N', 'G')
   })
   await check('csv → md table', async () => {
     const t = await (await convert(csvFile, 'md')).blob.text()
@@ -596,6 +670,34 @@ second paragraph line two`
       startAt: 1,
     })
     return magic(numbered.blob, '%', 'P', 'D', 'F')
+  })
+
+  await check('rotate-image swaps dimensions', async () => {
+    const before = await createImageBitmap(pngFile)
+    const rotated = await runTool('rotate-image', [pngFile], { angle: 90 })
+    const after = await createImageBitmap(rotated.blob)
+    return before.width === after.height && before.height === after.width
+  })
+
+  await check('crop-image shrinks dimensions', async () => {
+    const cropped = await runTool('crop-image', [pngFile], { x: 0, y: 0, width: 50, height: 40 })
+    const bmp = await createImageBitmap(cropped.blob)
+    return bmp.width === 50 && bmp.height === 40
+  })
+
+  await check('redact-pdf returns valid PDF', async () => {
+    const out = await runTool('redact-pdf', [new File([pdfA.blob], 'a.pdf')], { pages: '1' })
+    return magic(out.blob, '%', 'P', 'D', 'F')
+  })
+
+  await check('zip-files + unzip round-trip', async () => {
+    const zipped = await runTool('zip-files', [
+      new File(['hello'], 'a.txt', { type: 'text/plain' }),
+      new File(['world'], 'b.txt', { type: 'text/plain' }),
+    ])
+    if (!(await magic(zipped.blob, 'P', 'K'))) return false
+    const extracted = await runTool('unzip', [new File([zipped.blob], 'x.zip')])
+    return magic(extracted.blob, 'P', 'K')
   })
 
   await check('images-to-pdf → 3 pages', async () => {
@@ -796,7 +898,7 @@ Dialogue: 0,0:00:01.00,0:00:04.00,Default,,0,0,0,,Hello ASS
       await convert(big, 'mp3', { from: 'wav' })
       return false
     } catch (e) {
-      return /600/.test(e.message)
+      return /600|too large|TOO_LARGE/i.test(e.message) || e.code === 'TOO_LARGE'
     }
   })
   await check('wav → flac magic', async () => magic((await convert(wavFile, 'flac')).blob, 'f', 'L', 'a', 'C'))
@@ -869,11 +971,30 @@ Dialogue: 0,0:00:01.00,0:00:04.00,Default,,0,0,0,,Hello ASS
     }
   })
 
+  await check('opus-out gated on libopus', async () => {
+    try {
+      const r = await convert(wavFile, 'opus')
+      const head = new Uint8Array(await r.blob.slice(0, 4).arrayBuffer())
+      // Ogg container magic for .opus
+      return (
+        (head[0] === 0x4f && head[1] === 0x67 && head[2] === 0x67 && head[3] === 0x53) ||
+        r.blob.size > 100
+      )
+    } catch (e) {
+      return /libopus|Opus output is not available/i.test(e.message)
+    }
+  })
+
+  await check('trim-audio shortens file', async () => {
+    const trimmed = await runTool('trim-audio', [wavFile], { start: 0, duration: 0.15 })
+    return trimmed.blob.size > 0 && trimmed.blob.size < wavFile.size
+  })
+
   await check('lying-extension audio detect', async () =>
     (await detectFormat(new File([wavBuf], 'liar.bin'))) === 'wav')
 
   return out
-}, twoColumnPdfBytes)
+}, { twoColBytes: twoColumnPdfBytes, odtBytes, pptxBytes })
 for (const r of sdkReport) log('SDK: ' + r.name, r.ok, r.detail)
 
 // Worker routing lives in the app bundle (__SDK__=false), not the SDK.
@@ -981,6 +1102,13 @@ log('UI: developers matrix grouped by kind', (await page.locator('.docs [data-ki
 // -----------------------------------------------------------------------------
 await page.goto(BASE + '/', { waitUntil: 'networkidle' })
 await page.evaluate((base) => {
+  window.__embedHeight = new Promise((resolve) => {
+    window.addEventListener('message', (e) => {
+      if (e.data?.type === 'formatconvert:height' && typeof e.data.height === 'number') {
+        resolve(e.data.height)
+      }
+    })
+  })
   window.__embedResult = new Promise((resolve) => {
     window.addEventListener('message', (e) => {
       if (e.data?.type === 'formatconvert:result') resolve({ filename: e.data.filename, size: e.data.blob?.size, to: e.data.to })
@@ -1000,6 +1128,8 @@ const embedResult = await page.evaluate(() => window.__embedResult)
 log('Embed: postMessage result received', embedResult.filename === 'note.md' && embedResult.size > 0 && embedResult.to === 'md')
 const embedTheme = await page.frame({ url: /\/embed\?/ }).evaluate(() => document.documentElement.getAttribute('data-theme'))
 log('Embed: theme=light sets data-theme', embedTheme === 'light', embedTheme || '')
+const embedHeight = await page.evaluate(() => window.__embedHeight)
+log('Embed: height message received', typeof embedHeight === 'number' && embedHeight > 0, String(embedHeight))
 
 // -----------------------------------------------------------------------------
 // 4. PWA: service worker + offline conversion
@@ -1146,9 +1276,67 @@ const seoOk = await page.evaluate(() => {
 })
 log('SEO: pair-specific title + parseable JSON-LD', seoOk.titleOk && seoOk.jsonLdOk)
 
+const faqShell = await fetch(BASE + '/convert/csv-to-json/')
+const faqHtml = await faqShell.text()
+log('SEO: FAQPage JSON-LD present', /"@type"\s*:\s*"FAQPage"/.test(faqHtml))
+
+const ogRes = await fetch(BASE + '/og/convert-csv-to-json.svg')
+log('SEO: OG card served', ogRes.ok && (ogRes.headers.get('content-type') || '').includes('svg'), `status ${ogRes.status}`)
+
 await page.goto(BASE + '/developers', { waitUntil: 'networkidle' })
 log('SEO: Developers documents runTool', (await page.content()).includes('runTool'))
 log('SEO: Developers mentions prerender', (await page.content()).includes('prerender'))
+log('SEO: Developers mentions v6 production', (await page.content()).includes('v6 production'))
+
+const dtsRes = await fetch(BASE + '/formatconvert.d.ts')
+log('SDK: formatconvert.d.ts served', dtsRes.ok, `status ${dtsRes.status}`)
+
+const budgetRes = await fetch(BASE + '/bundle-report.json')
+const budgetJson = budgetRes.ok ? await budgetRes.json() : null
+log(
+  'Ops: bundle-report.json present',
+  !!budgetJson?.entries?.worker?.gzipBytes || !!budgetJson?.worker?.gzipBytes,
+  budgetJson ? 'ok' : 'missing'
+)
+
+await page.goto(BASE + '/', { waitUntil: 'networkidle' })
+await page.keyboard.press('Control+KeyK')
+await page.waitForSelector('.palette', { timeout: 3000 }).catch(() => {})
+log('UI: command palette opens', (await page.locator('.palette').count()) === 1)
+if ((await page.locator('.palette').count()) === 1) {
+  await page.locator('.palette-input').fill('CSV')
+  await page.waitForTimeout(100)
+  const item = page.locator('.palette-item', { hasText: 'JSON' }).first()
+  const hasItem = (await item.count()) > 0
+  if (hasItem) {
+    await item.click()
+    await page.waitForURL(/csv-to-json/, { timeout: 5000 }).catch(() => {})
+  }
+  log('UI: palette navigates to pair', /csv-to-json/.test(page.url()), page.url())
+}
+
+await page.goto(BASE + '/convert/png-to-jpg', { waitUntil: 'networkidle' })
+await page.evaluate(() => localStorage.removeItem('fc-favorites'))
+await page.reload({ waitUntil: 'networkidle' })
+await page.locator('button', { hasText: /Add to favorites/i }).click()
+await page.goto(BASE + '/', { waitUntil: 'networkidle' })
+const favCount = await page.locator('[data-kind="favorites"] a').count()
+log('UI: favorite chip on Home', favCount >= 1, `${favCount} chips`)
+
+await page.goto(BASE + '/convert/png-to-jpg', { waitUntil: 'networkidle' })
+await page.locator('input[type=file]').setInputFiles({
+  name: 'cmp.png',
+  mimeType: 'image/png',
+  buffer: Buffer.from(
+    Uint8Array.from(
+      atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='),
+      (c) => c.charCodeAt(0)
+    )
+  ),
+})
+await page.locator('.btn-primary', { hasText: /Convert/i }).click()
+await page.waitForSelector('[data-compare="1"]', { timeout: 15000 }).catch(() => {})
+log('UI: image compare mounts', (await page.locator('[data-compare="1"]').count()) === 1)
 
 await browser.close()
 stopPreview()

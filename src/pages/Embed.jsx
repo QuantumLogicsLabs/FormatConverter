@@ -1,29 +1,46 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { FORMATS, getConversion } from '../converters/index.js'
 import ConverterWidget from '../components/ConverterWidget.jsx'
 import Seo from '../components/Seo.jsx'
 import { applyTheme } from '../lib/theme.js'
 
+function post(type, payload, targetOrigin) {
+  window.parent?.postMessage({ type, ...payload }, targetOrigin || '*')
+}
+
 /**
- * Chrome-less converter for embedding in an <iframe>. Configure with query
- * params: /embed?from=pdf&to=txt&theme=light|dark. On completion the result is
- * posted to the parent window as { type: 'formatconvert:result', filename, blob }.
+ * Chrome-less converter for embedding in an <iframe>.
+ * Query: from, to, theme=light|dark, parentOrigin (postMessage target).
  */
 export default function Embed() {
   const [params] = useSearchParams()
   const from = params.get('from') || 'pdf'
   const to = params.get('to') || 'txt'
   const theme = params.get('theme')
+  const parentOrigin = params.get('parentOrigin') || '*'
   const entry = getConversion(from, to)
+  const rootRef = useRef(null)
 
   useEffect(() => {
     if (theme === 'light' || theme === 'dark') applyTheme(theme)
   }, [theme])
 
+  useEffect(() => {
+    post('formatconvert:ready', { from, to }, parentOrigin)
+    const el = rootRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(() => {
+      post('formatconvert:height', { height: el.scrollHeight }, parentOrigin)
+    })
+    ro.observe(el)
+    post('formatconvert:height', { height: el.scrollHeight }, parentOrigin)
+    return () => ro.disconnect()
+  }, [from, to, parentOrigin])
+
   if (!entry) {
     return (
-      <div className="embed">
+      <div className="embed" ref={rootRef}>
         <Seo title="Embed" description="FormatConvert embed widget" path="/embed" noindex />
         <p className="error">
           Unsupported conversion “{from} → {to}”. See /developers for the supported matrix.
@@ -33,20 +50,24 @@ export default function Embed() {
   }
 
   const handleResult = (result) => {
-    window.parent?.postMessage(
+    post(
+      'formatconvert:result',
       {
-        type: 'formatconvert:result',
         from: result.from,
         to: result.to,
         filename: result.filename,
         blob: result.blob,
       },
-      '*'
+      parentOrigin
     )
   }
 
+  const handleProgress = (progress) => {
+    post('formatconvert:progress', { progress }, parentOrigin)
+  }
+
   return (
-    <div className="embed">
+    <div className="embed" ref={rootRef}>
       <Seo
         title={`${FORMATS[from].label} → ${FORMATS[to].label} embed`}
         description="Chrome-less FormatConvert widget for iframes."
@@ -56,7 +77,14 @@ export default function Embed() {
       <p className="embed-title">
         {FORMATS[from].label} → {FORMATS[to].label}
       </p>
-      <ConverterWidget key={`${from}-${to}`} from={from} to={to} onResult={handleResult} single />
+      <ConverterWidget
+        key={`${from}-${to}`}
+        from={from}
+        to={to}
+        onResult={handleResult}
+        onProgress={handleProgress}
+        single
+      />
       <p className="embed-credit">
         Powered by{' '}
         <a href="https://formatconvert.quantumlogicslimited.com" target="_blank" rel="noreferrer">
