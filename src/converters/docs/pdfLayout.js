@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf'
-import { ensureNotoFont, needsUnicodeFont } from './pdfFonts.js'
+import { ensureNotoFont, ensureCjkFont, needsUnicodeFont, needsCjkFont } from './pdfFonts.js'
 
 /**
  * A small typesetting engine on top of jsPDF used by every *→PDF document
@@ -41,23 +41,31 @@ export class PdfBuilder {
     this._fontReady = null
   }
 
-  /** Resolve Unicode font if needed; call before first text write when using noto or mixed Unicode. */
+  /** Resolve Unicode / CJK fonts if needed; call before first text write. */
   async prepareFonts(sampleText = '') {
     if (this.baseFont === 'noto' || needsUnicodeFont(sampleText)) {
-      this._fontReady = ensureNotoFont(this.doc).then((name) => {
-        this.unicodeFamily = name
-        if (this.baseFont === 'noto') this.baseFont = name
-      })
+      this._fontReady = (async () => {
+        if (needsCjkFont(sampleText)) {
+          const name = await ensureCjkFont(this.doc)
+          this.unicodeFamily = name
+          if (this.baseFont === 'noto') this.baseFont = name
+        } else {
+          const name = await ensureNotoFont(this.doc)
+          this.unicodeFamily = name
+          if (this.baseFont === 'noto') this.baseFont = name
+        }
+      })()
       await this._fontReady
     }
   }
 
   familyFor(run = {}) {
     if (run.mono) return 'courier'
-    if (this.unicodeFamily && (this.baseFont === 'NotoSans' || needsUnicodeFont(run.text))) {
+    if (this.unicodeFamily && (this.baseFont === 'NotoSans' || this.baseFont === 'NotoSansSC' || needsUnicodeFont(run.text))) {
+      if (needsCjkFont(run.text) && this.unicodeFamily === 'NotoSansSC') return 'NotoSansSC'
       return this.unicodeFamily
     }
-    if (this.baseFont === 'NotoSans') return 'NotoSans'
+    if (this.baseFont === 'NotoSans' || this.baseFont === 'NotoSansSC') return this.baseFont
     return this.baseFont === 'times' || this.baseFont === 'courier' || this.baseFont === 'helvetica'
       ? this.baseFont
       : 'helvetica'

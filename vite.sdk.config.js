@@ -2,9 +2,8 @@ import { defineConfig } from 'vite'
 import { copyFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-// Builds the standalone developer SDK: a single self-contained ES module at
-// dist/sdk.js (all converters inlined), plus the pdf.js worker beside it so
-// PDF conversions work when the SDK is imported cross-origin.
+// Builds the developer SDK: thin facade at dist/sdk.js plus kind/engine chunks
+// under dist/sdk/ so integrators pay for converters only when used.
 export default defineConfig({
   define: {
     __SDK__: true,
@@ -35,7 +34,7 @@ export default defineConfig({
       output: {
         format: 'es',
         entryFileNames: 'sdk.js',
-        codeSplitting: false,
+        chunkFileNames: 'sdk/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash][extname]',
       },
     },

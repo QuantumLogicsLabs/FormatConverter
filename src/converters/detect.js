@@ -24,7 +24,7 @@ export async function detectFormat(file) {
   if (head[0] === 0 && head[1] === 0 && head[2] === 1 && head[3] === 0) return 'ico'
   if (ascii(head, 4, 8) === 'ftyp' && HEIC_BRANDS.includes(ascii(head, 8, 12).toLowerCase())) return 'heic'
 
-// Zip container: DOCX / XLSX / EPUB / ODT / PPTX
+// Zip container: DOCX / XLSX / EPUB / ODT / ODS / PPTX
   if (head[0] === 0x50 && head[1] === 0x4b && head[2] === 0x03 && head[3] === 0x04) {
     try {
       const JSZip = (await import('jszip')).default
@@ -32,17 +32,35 @@ export async function detectFormat(file) {
       if (zip.file('word/document.xml')) return 'docx'
       if (zip.file('xl/workbook.xml')) return 'xlsx'
       if (zip.file('ppt/presentation.xml')) return 'pptx'
-      if (zip.file('content.xml') && zip.file('META-INF/manifest.xml')) return 'odt'
+      if (zip.file('content.xml') && zip.file('META-INF/manifest.xml')) {
+        const mimeEntry = zip.file('mimetype')
+        const mime = mimeEntry ? await mimeEntry.async('string') : ''
+        if (mime.includes('opendocument.spreadsheet')) return 'ods'
+        if (mime.includes('opendocument.text')) return 'odt'
+        // Some producers omit/garble the mimetype entry — peek at the root element.
+        const contentXml = await zip.file('content.xml').async('string')
+        if (/office:spreadsheet[\s>]/i.test(contentXml)) return 'ods'
+        return 'odt'
+      }
       const mimeEntry = zip.file('mimetype')
       if (mimeEntry) {
         const mime = await mimeEntry.async('string')
         if (mime.includes('application/epub+zip')) return 'epub'
+        if (mime.includes('opendocument.spreadsheet')) return 'ods'
         if (mime.includes('opendocument.text')) return 'odt'
       }
     } catch {
       // not a readable zip
     }
     return 'zip'
+  }
+
+  // OLE Compound File Binary (legacy Office). Only .xls is supported here.
+  if (
+    head[0] === 0xd0 && head[1] === 0xcf && head[2] === 0x11 && head[3] === 0xe0 &&
+    head[4] === 0xa1 && head[5] === 0xb1 && head[6] === 0x1a && head[7] === 0xe1
+  ) {
+    return 'xls'
   }
 
   // TIFF (little / big endian)
@@ -57,7 +75,12 @@ export async function detectFormat(file) {
   if (ascii(head, 4, 8) === 'ftyp' && /avif|avis/i.test(ascii(head, 8, 16))) return 'avif'
 
   // Audio / video magic
-  if (ascii(head, 0, 3) === 'ID3' || (head[0] === 0xff && (head[1] & 0xe0) === 0xe0)) return 'mp3'
+  if (ascii(head, 0, 3) === 'ID3') return 'mp3'
+  if (head[0] === 0xff && (head[1] & 0xe0) === 0xe0) {
+    // MPEG audio frame sync (11 bits) overlaps ADTS AAC sync (12 bits); the
+    // layer field (always 0 for ADTS, non-zero for MP3 Layer III) tells them apart.
+    return (head[1] & 0x06) === 0 ? 'aac' : 'mp3'
+  }
   if (ascii(head, 0, 4) === 'fLaC') return 'flac'
   if (ascii(head, 0, 4) === 'OggS') return 'ogg'
   if (ascii(head, 0, 4) === 'RIFF' && ascii(head, 8, 12) === 'WAVE') return 'wav'

@@ -1,9 +1,19 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { FORMATS, getConversion } from '../converters/index.js'
 import ConverterWidget from '../components/ConverterWidget.jsx'
 import Seo from '../components/Seo.jsx'
 import { applyTheme } from '../lib/theme.js'
+
+function isValidParentOrigin(value) {
+  if (!value || value === '*') return true
+  try {
+    const u = new URL(value)
+    return u.protocol === 'https:' || u.protocol === 'http:'
+  } catch {
+    return false
+  }
+}
 
 function post(type, payload, targetOrigin) {
   window.parent?.postMessage({ type, ...payload }, targetOrigin || '*')
@@ -11,14 +21,18 @@ function post(type, payload, targetOrigin) {
 
 /**
  * Chrome-less converter for embedding in an <iframe>.
- * Query: from, to, theme=light|dark, parentOrigin (postMessage target).
+ * Query: from, to, theme=light|dark, parentOrigin (postMessage target — preferred).
  */
 export default function Embed() {
   const [params] = useSearchParams()
   const from = params.get('from') || 'pdf'
   const to = params.get('to') || 'txt'
   const theme = params.get('theme')
-  const parentOrigin = params.get('parentOrigin') || '*'
+  const rawOrigin = params.get('parentOrigin')
+  const parentOrigin = useMemo(() => {
+    if (!rawOrigin) return '*'
+    return isValidParentOrigin(rawOrigin) ? rawOrigin : '*'
+  }, [rawOrigin])
   const entry = getConversion(from, to)
   const rootRef = useRef(null)
 
@@ -77,6 +91,11 @@ export default function Embed() {
       <p className="embed-title">
         {FORMATS[from].label} → {FORMATS[to].label}
       </p>
+      {!rawOrigin && (
+        <p className="meta embed-origin-hint">
+          Tip: pass <code>parentOrigin</code> (your site origin) so postMessage targets only your page.
+        </p>
+      )}
       <ConverterWidget
         key={`${from}-${to}`}
         from={from}

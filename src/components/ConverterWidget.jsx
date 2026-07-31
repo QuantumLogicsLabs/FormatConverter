@@ -315,21 +315,39 @@ export default function ConverterWidget({ from, to, initialFile = null, onResult
       {status === 'done' && batch && (
         <div className="result">
           <div className="toolbar">
-            <span className="meta">
+            <span className="meta" aria-live="polite">
               {okCount} of {batch.length} files converted
+              {batch.some((e) => !e.ok) && (
+                <> · {batch.filter((e) => !e.ok).length} failed</>
+              )}
             </span>
-            {okCount > 1 && (
-              <button className="btn btn-primary" onClick={downloadAll}>
-                Download all (.zip)
-              </button>
-            )}
+            <div className="toolbar-actions">
+              {batch.some((e) => !e.ok) && (
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => {
+                    const failed = batch.filter((e) => !e.ok).map((e) => e.file)
+                    setBatch(null)
+                    run(failed, options)
+                  }}
+                >
+                  Retry failed
+                </button>
+              )}
+              {okCount > 1 && (
+                <button className="btn btn-primary" onClick={downloadAll}>
+                  Download all (.zip)
+                </button>
+              )}
+            </div>
           </div>
           <ul className="queue">
             {batch.map((entry, i) => (
               <li key={i} className="queue-row">
                 <span className="queue-name">
                   <span className={entry.ok ? 'status-ok' : 'status-bad'}>
-                    {entry.ok ? 'Done' : 'Failed'}
+                    {entry.ok ? 'Done' : entry.error?.code || 'Failed'}
                   </span>
                   {entry.file.name}
                 </span>
@@ -341,7 +359,10 @@ export default function ConverterWidget({ from, to, initialFile = null, onResult
                     Download {entry.result.filename.split('.').pop().toUpperCase()}
                   </button>
                 ) : (
-                  <span className="error queue-error">{entry.error?.message || 'failed'}</span>
+                  <span className="error queue-error" role="status">
+                    {entry.error?.code ? `${entry.error.code}: ` : ''}
+                    {entry.error?.message || 'failed'}
+                  </span>
                 )}
               </li>
             ))}

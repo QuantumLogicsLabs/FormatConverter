@@ -1,6 +1,8 @@
 /**
  * Type definitions for FormatConvert SDK (`/sdk.js`).
- * Conversions run entirely in the browser — no uploads.
+ * Facade + on-demand chunks under `/sdk/`. Conversions run in the browser — no uploads.
+ *
+ * Reserved npm name: @quantumlogics/formatconvert (publish is manual / user-owned).
  */
 
 export type ProgressInfo = {
@@ -28,10 +30,33 @@ export type ConvertManyResult = {
   aborted?: boolean
 }
 
+/** Common convert options; pair-specific keys come from registry option schemas. */
 export type ConvertOptions = {
   from?: string
   onProgress?: (p: ProgressInfo) => void
   signal?: AbortSignal
+  /** Document / PDF layout */
+  pageSize?: string
+  fontSize?: number
+  lineHeight?: number
+  margin?: number
+  font?: string
+  pageNumbers?: boolean | string
+  mode?: string
+  ocr?: string
+  ocrLanguage?: string
+  pageBreaks?: string
+  scale?: number
+  quality?: number
+  width?: number
+  background?: string
+  sizes?: number[]
+  sheet?: string
+  /** Video */
+  mute?: boolean
+  /** PDF tools / unlock */
+  password?: string
+  pages?: string
   [key: string]: unknown
 }
 
@@ -53,6 +78,30 @@ export type FormatInfo = {
   input: boolean
   output: boolean
 }
+
+export type ToolId =
+  | 'merge-pdf'
+  | 'split-pdf'
+  | 'rotate-pdf'
+  | 'extract-pages'
+  | 'compress-pdf'
+  | 'images-to-pdf'
+  | 'images-to-gif'
+  | 'watermark-pdf'
+  | 'reorder-pdf'
+  | 'page-numbers-pdf'
+  | 'rotate-image'
+  | 'crop-image'
+  | 'trim-audio'
+  | 'normalize-audio'
+  | 'redact-pdf'
+  | 'zip-files'
+  | 'unzip'
+  | 'unlock-pdf'
+  | 'compress-image'
+  | 'resize-image'
+  | 'trim-video'
+  | 'ocr-pages'
 
 export declare const FORMATS: Record<string, FormatInfo>
 export declare const KINDS: Array<{ id: string; label: string }>
@@ -79,12 +128,12 @@ export declare function listConversions(): Array<{ from: string; to: string; opt
 export declare function targetsFor(from: string): string[]
 export declare function getConversion(from: string, to: string): unknown
 export declare function runTool(
-  toolId: string,
+  toolId: ToolId | string,
   files: ArrayLike<File | Blob>,
   options?: ConvertOptions
 ): Promise<ToolResult>
 export declare function listTools(): Array<{
-  id: string
+  id: ToolId | string
   label: string
   description: string
   inputs: unknown
@@ -92,6 +141,10 @@ export declare function listTools(): Array<{
   options: unknown[]
 }>
 export declare function getTool(id: string): unknown
+
+export declare function getLastFFmpegLoadSource(): 'network' | 'cache' | null
+export declare function resetFFmpeg(): Promise<void>
+export declare function assertAvFileSize(file: File | Blob): boolean
 
 declare global {
   interface Window {

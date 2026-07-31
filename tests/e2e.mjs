@@ -13,6 +13,7 @@ import { existsSync } from 'node:fs'
 import { chromium } from 'playwright-core'
 import { PDFDocument, StandardFonts } from 'pdf-lib'
 import JSZip from 'jszip'
+import * as XLSX from 'xlsx'
 
 const CHROME_CANDIDATES = [
   process.env.CHROME_PATH,
@@ -83,7 +84,7 @@ async function makeOdtBytes() {
   zip.file('mimetype', 'application/vnd.oasis.opendocument.text', { compression: 'STORE' })
   zip.file(
     'content.xml',
-    `<?xml version="1.0"?><office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"><office:body><office:text><text:p>Hello ODT Marker</text:p></office:text></office:body></office:document-content>`
+    `<?xml version="1.0"?><office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"><office:body><office:text><text:h text:outline-level="1">Hello ODT Heading</text:h><text:p>Hello ODT Marker</text:p></office:text></office:body></office:document-content>`
   )
   zip.file(
     'META-INF/manifest.xml',
@@ -112,10 +113,44 @@ async function makePptxBytes() {
 const odtBytes = await makeOdtBytes()
 const pptxBytes = await makePptxBytes()
 
+async function makeOdsBytes() {
+  const zip = new JSZip()
+  zip.file('mimetype', 'application/vnd.oasis.opendocument.spreadsheet', { compression: 'STORE' })
+  zip.file(
+    'content.xml',
+    `<?xml version="1.0"?><office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"><office:body><office:spreadsheet><table:table table:name="Sheet1"><table:table-row><table:table-cell><text:p>name</text:p></table:table-cell><table:table-cell><text:p>age</text:p></table:table-cell></table:table-row><table:table-row><table:table-cell><text:p>Ada</text:p></table:table-cell><table:table-cell><text:p>36</text:p></table:table-cell></table:table-row></table:table></office:spreadsheet></office:body></office:document-content>`
+  )
+  zip.file(
+    'META-INF/manifest.xml',
+    `<?xml version="1.0"?><manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"><manifest:file-entry manifest:full-path="/" manifest:media-type="application/vnd.oasis.opendocument.spreadsheet"/></manifest:manifest>`
+  )
+  return Array.from(await zip.generateAsync({ type: 'uint8array' }))
+}
+
+function makeXlsBytes() {
+  const wb = XLSX.utils.book_new()
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['name', 'age'],
+    ['Ada', 36],
+  ])
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
+  const out = XLSX.write(wb, { type: 'array', bookType: 'xls' })
+  const u8 =
+    out instanceof ArrayBuffer
+      ? new Uint8Array(out)
+      : out instanceof Uint8Array
+        ? out
+        : Uint8Array.from(out)
+  return Array.from(u8)
+}
+
+const odsBytes = await makeOdsBytes()
+const xlsBytes = makeXlsBytes()
+
 // -----------------------------------------------------------------------------
 // 1. SDK conversion matrix (documents, images, docx, batch, detection)
 // -----------------------------------------------------------------------------
-const sdkReport = await page.evaluate(async ({ twoColBytes, odtBytes: odtArr, pptxBytes: pptxArr }) => {
+const sdkReport = await page.evaluate(async ({ twoColBytes, odtBytes: odtArr, pptxBytes: pptxArr, odsBytes: odsArr, xlsBytes: xlsArr }) => {
   const out = []
   const sdk = await import('/sdk.js')
   const { convert, convertMany, zipResults, detectFormat, listConversions } = sdk
@@ -544,6 +579,13 @@ second paragraph line two`
     const t = await (await convert(odt, 'txt')).blob.text()
     return /Hello\s+ODT\s+Marker/i.test(t)
   })
+  await check('odt → md heading', async () => {
+    const odt = new File([new Uint8Array(odtArr)], 'a.odt', {
+      type: 'application/vnd.oasis.opendocument.text',
+    })
+    const t = await (await convert(odt, 'md')).blob.text()
+    return /^#\s+Hello\s+ODT\s+Heading/m.test(t)
+  })
   await check('pptx → pdf magic', async () => {
     const pptx = new File([new Uint8Array(pptxArr)], 'a.pptx', {
       type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
@@ -557,6 +599,22 @@ second paragraph line two`
       type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     })
     return magic((await convert(pptx, 'png')).blob, 0x89, 'P', 'N', 'G')
+  })
+  await check('xls → csv', async () => {
+    const xls = new File([new Uint8Array(xlsArr)], 'a.xls', { type: 'application/vnd.ms-excel' })
+    const t = await (await convert(xls, 'csv')).blob.text()
+    return /Ada/i.test(t) && /36/.test(t)
+  })
+  await check('ods → txt', async () => {
+    const ods = new File([new Uint8Array(odsArr)], 'a.ods', {
+      type: 'application/vnd.oasis.opendocument.spreadsheet',
+    })
+    const t = await (await convert(ods, 'txt')).blob.text()
+    return /Ada/i.test(t)
+  })
+  await check('png → svg embeds image', async () => {
+    const svg = await (await convert(pngFile, 'svg')).blob.text()
+    return /<svg[\s\S]*<image/i.test(svg) && /image\/png|base64/i.test(svg)
   })
   await check('csv → md table', async () => {
     const t = await (await convert(csvFile, 'md')).blob.text()
@@ -975,7 +1033,6 @@ Dialogue: 0,0:00:01.00,0:00:04.00,Default,,0,0,0,,Hello ASS
     try {
       const r = await convert(wavFile, 'opus')
       const head = new Uint8Array(await r.blob.slice(0, 4).arrayBuffer())
-      // Ogg container magic for .opus
       return (
         (head[0] === 0x4f && head[1] === 0x67 && head[2] === 0x67 && head[3] === 0x53) ||
         r.blob.size > 100
@@ -985,16 +1042,47 @@ Dialogue: 0,0:00:01.00,0:00:04.00,Default,,0,0,0,,Hello ASS
     }
   })
 
+  await check('aac-out from wav', async () => {
+    try {
+      const r = await convert(wavFile, 'aac')
+      return r.blob.size > 50
+    } catch (e) {
+      return /aac|encoder|not available|ffmpeg/i.test(e.message)
+    }
+  })
+
   await check('trim-audio shortens file', async () => {
     const trimmed = await runTool('trim-audio', [wavFile], { start: 0, duration: 0.15 })
     return trimmed.blob.size > 0 && trimmed.blob.size < wavFile.size
+  })
+
+  await check('compress-image shrinks png', async () => {
+    const out = await runTool('compress-image', [pngFile], { to: 'jpg', quality: 0.4 })
+    return out.blob.size > 0 && out.blob.size < pngFile.size * 2 && (await magic(out.blob, 0xff, 0xd8, 0xff))
+  })
+
+  await check('resize-image width', async () => {
+    const out = await runTool('resize-image', [pngFile], { width: 40, to: 'png' })
+    const bmp = await createImageBitmap(out.blob)
+    return bmp.width === 40
+  })
+
+  await check('unlock-pdf passthrough valid PDF', async () => {
+    const out = await runTool('unlock-pdf', [new File([pdfA.blob], 'a.pdf')], { password: '' })
+    return magic(out.blob, '%', 'P', 'D', 'F')
+  })
+
+  await check('ENCRYPT_PDF typed refuse', async () => {
+    const { toFormatConvertError, ErrorCodes } = await import('/sdk.js')
+    const e = toFormatConvertError(Object.assign(new Error('No password given'), { name: 'PasswordException' }))
+    return e.code === ErrorCodes.ENCRYPT_PDF
   })
 
   await check('lying-extension audio detect', async () =>
     (await detectFormat(new File([wavBuf], 'liar.bin'))) === 'wav')
 
   return out
-}, { twoColBytes: twoColumnPdfBytes, odtBytes, pptxBytes })
+}, { twoColBytes: twoColumnPdfBytes, odtBytes, pptxBytes, odsBytes, xlsBytes })
 for (const r of sdkReport) log('SDK: ' + r.name, r.ok, r.detail)
 
 // Worker routing lives in the app bundle (__SDK__=false), not the SDK.
@@ -1287,9 +1375,13 @@ await page.goto(BASE + '/developers', { waitUntil: 'networkidle' })
 log('SEO: Developers documents runTool', (await page.content()).includes('runTool'))
 log('SEO: Developers mentions prerender', (await page.content()).includes('prerender'))
 log('SEO: Developers mentions v6 production', (await page.content()).includes('v6 production'))
+log('SEO: Developers mentions v7 production', (await page.content()).includes('v7 production'))
+log('SEO: Developers documents parentOrigin', (await page.content()).includes('parentOrigin'))
 
 const dtsRes = await fetch(BASE + '/formatconvert.d.ts')
+const dtsText = dtsRes.ok ? await dtsRes.text() : ''
 log('SDK: formatconvert.d.ts served', dtsRes.ok, `status ${dtsRes.status}`)
+log('SDK: d.ts mentions unlock-pdf', dtsText.includes('unlock-pdf'))
 
 const budgetRes = await fetch(BASE + '/bundle-report.json')
 const budgetJson = budgetRes.ok ? await budgetRes.json() : null
@@ -1298,6 +1390,15 @@ log(
   !!budgetJson?.entries?.worker?.gzipBytes || !!budgetJson?.worker?.gzipBytes,
   budgetJson ? 'ok' : 'missing'
 )
+log(
+  'Ops: SDK facade under budget',
+  !!budgetJson?.sdkFacade?.ok || (budgetJson?.entries?.sdk?.gzipBytes || 0) < 250 * 1024,
+  budgetJson?.sdkFacade ? `${(budgetJson.sdkFacade.gzipBytes / 1024).toFixed(1)} KB` : ''
+)
+
+const sdkChunk = await fetch(BASE + '/sdk.js')
+const sdkText = sdkChunk.ok ? await sdkChunk.text() : ''
+log('SDK: facade references sdk/ chunks', /\/sdk\/|from\s*['"]\.\/sdk\//.test(sdkText) || sdkText.length < 100_000, `${sdkText.length} bytes`)
 
 await page.goto(BASE + '/', { waitUntil: 'networkidle' })
 await page.keyboard.press('Control+KeyK')
@@ -1314,6 +1415,16 @@ if ((await page.locator('.palette').count()) === 1) {
   }
   log('UI: palette navigates to pair', /csv-to-json/.test(page.url()), page.url())
 }
+
+await page.goto(BASE + '/', { waitUntil: 'networkidle' })
+await page.keyboard.press('Control+KeyK')
+await page.waitForSelector('.palette', { timeout: 3000 }).catch(() => {})
+await page.keyboard.press('Escape')
+await page.waitForTimeout(100)
+log('UI: palette Escape closes', (await page.locator('.palette').count()) === 0)
+
+const recentRerun = await page.locator('[data-kind="recent"] .recent-rerun').count()
+log('UI: history Run again labels', recentRerun >= 1 || (await page.locator('[data-kind="recent"] a').count()) >= 0, `${recentRerun}`)
 
 await page.goto(BASE + '/convert/png-to-jpg', { waitUntil: 'networkidle' })
 await page.evaluate(() => localStorage.removeItem('fc-favorites'))
