@@ -12,6 +12,7 @@ import {
 import { setPendingFile } from '../lib/pendingFile.js'
 import { formatBytes } from '../lib/format.js'
 import { loadRecent } from '../lib/recent.js'
+import { loadFavorites } from '../lib/favorites.js'
 import Dropzone from '../components/Dropzone.jsx'
 import Seo from '../components/Seo.jsx'
 import { HOME_TITLE, HOME_DESCRIPTION } from '../seo/copy.js'
@@ -61,14 +62,24 @@ export default function Home() {
   const pairCount = listConversions().length
   const formatCount = Object.keys(FORMATS).filter((k) => FORMATS[k].input).length
   const [recent, setRecent] = useState(() => loadRecent())
+  const [favorites, setFavorites] = useState(() => loadFavorites())
+  const [filter, setFilter] = useState('')
 
   const kindSections = KINDS.map((kind) => ({
     ...kind,
-    sources: sourcesForKind(kind.id),
+    sources: sourcesForKind(kind.id).filter((from) => {
+      if (!filter.trim()) return true
+      const needle = filter.trim().toLowerCase()
+      if (FORMATS[from].label.toLowerCase().includes(needle) || from.includes(needle)) return true
+      return targetsFor(from).some(
+        (to) => FORMATS[to].label.toLowerCase().includes(needle) || to.includes(needle)
+      )
+    }),
   })).filter((k) => k.sources.length)
 
   useEffect(() => {
     setRecent(loadRecent())
+    setFavorites(loadFavorites())
   }, [])
 
   const handleFile = async (file) => {
@@ -163,6 +174,16 @@ export default function Home() {
         )}
       </div>
 
+      {favorites.length > 0 && (
+        <div className="recent-strip" aria-label="Favorite converters" data-kind="favorites">
+          {favorites.map((e) => (
+            <Link key={`fav-${e.from}-${e.to}`} to={`/convert/${e.from}-to-${e.to}`}>
+              ★ {FORMATS[e.from]?.label || e.from} → {FORMATS[e.to]?.label || e.to}
+            </Link>
+          ))}
+        </div>
+      )}
+
       {recent.length > 0 && (
         <div className="recent-strip" aria-label="Recent conversions">
           {recent.map((e) => (
@@ -174,6 +195,19 @@ export default function Home() {
       )}
 
       <section className="home-browse">
+        <div className="home-filter">
+          <label className="meta" htmlFor="home-filter">
+            Filter formats
+          </label>
+          <input
+            id="home-filter"
+            type="search"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Search formats…"
+            aria-label="Filter formats"
+          />
+        </div>
         <nav className="kind-tabs" aria-label="Format categories">
           {kindSections.map((kind) => (
             <a key={kind.id} href={`#kind-${kind.id}`}>

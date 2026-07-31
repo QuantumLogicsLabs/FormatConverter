@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { getPreferredTheme, initTheme, toggleTheme } from '../lib/theme.js'
 import InstallPrompt from './InstallPrompt.jsx'
+import CommandPalette from './CommandPalette.jsx'
 
 export default function Layout() {
   const [theme, setTheme] = useState(() => getPreferredTheme())
@@ -14,6 +15,9 @@ export default function Layout() {
 
   return (
     <div className="app">
+      <a href="#main-content" className="skip-link">
+        Skip to content
+      </a>
       <nav className="nav">
         <Link to="/" className="nav-brand">
           <img
@@ -40,7 +44,10 @@ export default function Layout() {
         </div>
       </nav>
 
-      <Outlet />
+      <main id="main-content">
+        <Outlet />
+      </main>
+      <CommandPalette />
       <InstallPrompt />
 
       <footer className="footer">

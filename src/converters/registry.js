@@ -39,8 +39,14 @@ export const FORMATS = {
   json: { label: 'JSON',     kind: 'data', exts: ['json'], mime: 'application/json', input: true, output: true },
   yaml: { label: 'YAML',     kind: 'data', exts: ['yaml', 'yml'], mime: 'application/yaml', input: true, output: true },
   toml: { label: 'TOML',     kind: 'data', exts: ['toml'], mime: 'application/toml', input: true, output: true },
+  ini:  { label: 'INI',      kind: 'data', exts: ['ini', 'cfg', 'conf'], mime: 'text/plain', input: true, output: true },
+  jsonl:{ label: 'JSONL',    kind: 'data', exts: ['jsonl', 'ndjson'], mime: 'application/x-ndjson', input: true, output: true },
   xml:  { label: 'XML',      kind: 'data', exts: ['xml'], mime: 'application/xml', input: true, output: true },
+  zip:  { label: 'ZIP',      kind: 'data', exts: ['zip'], mime: 'application/zip', input: true, output: true },
   epub: { label: 'EPUB',     kind: 'ebook', exts: ['epub'], mime: 'application/epub+zip', input: true, output: true },
+  rtf:  { label: 'RTF',      kind: 'document', exts: ['rtf'], mime: 'application/rtf', input: true, output: true },
+  odt:  { label: 'ODT',      kind: 'document', exts: ['odt'], mime: 'application/vnd.oasis.opendocument.text', input: true, output: false },
+  pptx: { label: 'PowerPoint', kind: 'document', exts: ['pptx'], mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', input: true, output: false },
   srt:  { label: 'SRT',      kind: 'subtitle', exts: ['srt'], mime: 'application/x-subrip', input: true, output: true },
   vtt:  { label: 'VTT',      kind: 'subtitle', exts: ['vtt'], mime: 'text/vtt', input: true, output: true },
   ass:  { label: 'ASS',      kind: 'subtitle', exts: ['ass'], mime: 'text/x-ass', input: true, output: true },
@@ -50,6 +56,7 @@ export const FORMATS = {
   ogg:  { label: 'OGG',      kind: 'audio', exts: ['ogg', 'oga'], mime: 'audio/ogg', input: true, output: true },
   flac: { label: 'FLAC',     kind: 'audio', exts: ['flac'], mime: 'audio/flac', input: true, output: true },
   m4a:  { label: 'M4A',      kind: 'audio', exts: ['m4a'], mime: 'audio/mp4', input: true, output: true },
+  opus: { label: 'Opus',     kind: 'audio', exts: ['opus'], mime: 'audio/opus', input: true, output: true },
   mp4:  { label: 'MP4',      kind: 'video', exts: ['mp4'], mime: 'video/mp4', input: true, output: true },
   webm: { label: 'WebM',     kind: 'video', exts: ['webm'], mime: 'video/webm', input: true, output: true },
   mov:  { label: 'MOV',      kind: 'video', exts: ['mov'], mime: 'video/quicktime', input: true, output: false },
@@ -151,6 +158,14 @@ const OPT_PAGE_BREAKS = {
   ],
   help: 'How to separate pages in the extracted text.',
 }
+const OPT_VIDEO_WIDTH = {
+  key: 'width', label: 'Scale width (px)', type: 'number', default: 0, min: 0, max: 3840,
+  help: 'Optional output width; height follows aspect. 0 = keep source size.',
+}
+const OPT_VIDEO_MUTE = {
+  key: 'mute', label: 'Mute audio', type: 'boolean', default: false,
+}
+const OPT_VIDEO = [OPT_VIDEO_WIDTH, OPT_VIDEO_MUTE]
 const OPT_SCALE = {
   key: 'scale', label: 'Render scale', type: 'select', default: 2,
   choices: [{ value: 1, label: '1× (72 dpi)' }, { value: 2, label: '2× (144 dpi)' }, { value: 3, label: '3× (216 dpi)' }],
@@ -221,6 +236,21 @@ register('txt', 'docx', () => import('./docs/txtToDocx.js'))
 register('html', 'docx', () => import('./docs/htmlToDocx.js'))
 register('pdf', 'docx', () => import('./docs/pdfToDocx.js'), [OPT_OCR, OPT_OCR_LANGUAGE])
 
+// RTF / ODT / PPTX
+register('rtf', 'txt', () => import('./docs/rtfConvert.js'), [], { env: 'worker' })
+register('rtf', 'md', () => import('./docs/rtfConvert.js'), [], { env: 'worker' })
+register('rtf', 'html', () => import('./docs/rtfConvert.js'), [], { env: 'worker' })
+register('txt', 'rtf', () => import('./docs/rtfConvert.js'), [], { env: 'worker' })
+register('md', 'rtf', () => import('./docs/rtfConvert.js'), [], { env: 'worker' })
+register('html', 'rtf', () => import('./docs/rtfConvert.js'), [], { env: 'worker' })
+register('odt', 'txt', () => import('./docs/odtIn.js'))
+register('odt', 'md', () => import('./docs/odtIn.js'))
+register('odt', 'html', () => import('./docs/odtIn.js'))
+register('pptx', 'txt', () => import('./docs/pptxIn.js'))
+register('pptx', 'md', () => import('./docs/pptxIn.js'))
+register('pptx', 'pdf', () => import('./docs/pptxIn.js'), [OPT_PAGE_SIZE])
+register('pptx', 'png', () => import('./docs/pptxIn.js'))
+
 // OCR: photos/scans → text
 for (const from of ['png', 'jpg', 'webp', 'bmp', 'gif', 'heic', 'tiff', 'avif']) {
   register(from, 'txt', () => import('./ocr/imageToTxt.js'), [OPT_OCR_LANGUAGE])
@@ -245,7 +275,7 @@ for (const from of IMAGE_INPUTS) {
 
 // Data formats — tabular IR + tree bridging.
 // xlsx stays on main (SheetJS is heavy); other data pairs use the worker.
-const DATA = ['csv', 'tsv', 'xlsx', 'json', 'yaml', 'toml', 'xml']
+const DATA = ['csv', 'tsv', 'xlsx', 'json', 'jsonl', 'yaml', 'toml', 'ini', 'xml']
 const DATA_DOC_OUT = ['md', 'html', 'txt', 'pdf', 'docx']
 const loadData = () => import('./data/convert.js')
 for (const from of DATA) {
@@ -287,7 +317,7 @@ for (const from of SUBS) {
 }
 
 // Audio (ffmpeg.wasm — main thread; ffmpeg owns its worker)
-const AUDIO = ['mp3', 'wav', 'ogg', 'flac', 'm4a']
+const AUDIO = ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'opus']
 for (const from of AUDIO) {
   for (const to of AUDIO) {
     if (from === to) continue
@@ -297,17 +327,17 @@ for (const from of AUDIO) {
 
 // Video — inputs mp4/webm/mov/gif → mp4 / webm / gif / audio extract
 const VIDEO_IN = ['mp4', 'webm', 'mov']
-const VIDEO_AUDIO_OUT = ['mp3', 'wav', 'ogg', 'flac', 'm4a']
+const VIDEO_AUDIO_OUT = ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'opus']
 for (const from of VIDEO_IN) {
-  register(from, 'mp4', () => import('./av/video.js'))
-  register(from, 'webm', () => import('./av/video.js'))
+  register(from, 'mp4', () => import('./av/video.js'), OPT_VIDEO)
+  register(from, 'webm', () => import('./av/video.js'), OPT_VIDEO)
   register(from, 'gif', () => import('./av/videoToGif.js'))
   for (const to of VIDEO_AUDIO_OUT) {
     register(from, to, () => import('./av/video.js'))
   }
 }
-register('gif', 'mp4', () => import('./av/video.js'))
-register('gif', 'webm', () => import('./av/video.js'))
+register('gif', 'mp4', () => import('./av/video.js'), OPT_VIDEO)
+register('gif', 'webm', () => import('./av/video.js'), OPT_VIDEO)
 
 export function getConversion(from, to) {
   return CONVERSIONS[from]?.[to] || null

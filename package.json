@@ -1,7 +1,7 @@
 {
   "name": "formatconvert",
   "private": true,
-  "version": "5.0.0",
+  "version": "6.0.0",
   "type": "module",
   "engines": {
     "node": ">=22.13"
@@ -10,9 +10,11 @@
     "predev": "node scripts/copy-assets.mjs && node scripts/generate-sitemap.mjs",
     "dev": "vite",
     "prebuild": "node scripts/copy-assets.mjs && node scripts/generate-sitemap.mjs",
-    "build": "vite build && vite build --config vite.sdk.config.js && node scripts/generate-seo.mjs",
+    "build": "vite build && vite build --config vite.sdk.config.js && node scripts/generate-seo.mjs && node scripts/bundle-report.mjs && node scripts/check-worker-budget.mjs",
     "e2e": "node tests/e2e.mjs",
+    "test:unit": "node --test tests/unit/*.test.mjs",
     "docs:check": "node scripts/generate-sitemap.mjs && node scripts/docs-check.mjs",
+    "check:budget": "node scripts/bundle-report.mjs && node scripts/check-worker-budget.mjs",
     "build:app": "vite build && node scripts/generate-seo.mjs",
     "build:sdk": "vite build --config vite.sdk.config.js",
     "preview": "vite preview"

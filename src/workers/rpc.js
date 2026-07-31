@@ -11,7 +11,7 @@ function ensureWorker() {
   if (worker) return worker
   worker = new Worker(new URL('./convert.worker.js', import.meta.url), { type: 'module' })
   worker.onmessage = (e) => {
-    const { id, type, result, error, progress } = e.data || {}
+    const { id, type, result, error, progress, code } = e.data || {}
     const entry = pending.get(id)
     if (!entry) return
     if (type === 'progress') {
@@ -19,8 +19,13 @@ function ensureWorker() {
       return
     }
     pending.delete(id)
-    if (type === 'error') entry.reject(new Error(error || 'Worker conversion failed.'))
-    else entry.resolve(result)
+    if (type === 'error') {
+      const err =
+        code === 'ABORTED' || /abort/i.test(error || '')
+          ? new DOMException(error || 'Conversion aborted.', 'AbortError')
+          : new Error(error || 'Worker conversion failed.')
+      entry.reject(err)
+    } else entry.resolve(result)
   }
   worker.onerror = (err) => {
     for (const [, entry] of pending) {
@@ -32,10 +37,27 @@ function ensureWorker() {
   return worker
 }
 
+/** Tear down the singleton (abort / OOM recovery). */
+export function resetConvertWorker() {
+  if (worker) {
+    try {
+      worker.terminate()
+    } catch {
+      /* ignore */
+    }
+    worker = null
+  }
+  for (const [, entry] of pending) {
+    entry.reject(new DOMException('Conversion aborted.', 'AbortError'))
+  }
+  pending.clear()
+}
+
 /**
  * Run a conversion inside the module worker.
  * @param {{ buffer: ArrayBuffer, name: string, type: string, from: string, to: string, opts: object }} payload
  * @param {(p: object) => void} [onProgress]
+ * @param {AbortSignal} [signal]
  * @returns {Promise<{ buffer: ArrayBuffer, type: string, ext: string }>}
  */
 export function convertInWorker(payload, onProgress, signal) {
@@ -52,6 +74,8 @@ export function convertInWorker(payload, onProgress, signal) {
       } catch {
         /* ignore */
       }
+      // Hard-stop: terminate frees memory from runaway work
+      resetConvertWorker()
       reject(new DOMException('Conversion aborted.', 'AbortError'))
     }
     if (signal) {

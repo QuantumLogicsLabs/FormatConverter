@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { downloadBlob, formatBytes } from '../lib/format.js'
 
-export default function ResultPanel({ result, onReset }) {
+const BITMAP_TYPES = /^(image\/(png|jpeg|jpg|webp|gif|bmp|avif|tiff))$/i
+
+export default function ResultPanel({ result, onReset, sourceFile = null }) {
   const { blob, filename } = result
   const isText = blob.type.startsWith('text/') || blob.type === 'application/json'
   const isImage = blob.type.startsWith('image/') && blob.type !== 'image/x-icon'
   const isPdf = blob.type === 'application/pdf'
+  const canCompare =
+    isImage &&
+    sourceFile &&
+    (BITMAP_TYPES.test(sourceFile.type) || /\.(png|jpe?g|webp|gif|bmp|avif|tiff)$/i.test(sourceFile.name || ''))
 
   const [text, setText] = useState('')
   const [copied, setCopied] = useState(false)
@@ -13,12 +19,17 @@ export default function ResultPanel({ result, onReset }) {
     () => (isImage || isPdf ? URL.createObjectURL(blob) : null),
     [blob, isImage, isPdf]
   )
+  const sourceUrl = useMemo(
+    () => (canCompare ? URL.createObjectURL(sourceFile) : null),
+    [canCompare, sourceFile]
+  )
 
   useEffect(() => {
     if (isText) blob.text().then(setText)
   }, [blob, isText])
 
   useEffect(() => () => objectUrl && URL.revokeObjectURL(objectUrl), [objectUrl])
+  useEffect(() => () => sourceUrl && URL.revokeObjectURL(sourceUrl), [sourceUrl])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(text)
@@ -45,7 +56,19 @@ export default function ResultPanel({ result, onReset }) {
       </div>
 
       {isText && <textarea className="output" value={text} readOnly />}
-      {isImage && (
+      {isImage && canCompare && (
+        <div className="compare-preview" data-compare="1">
+          <figure className="compare-pane">
+            <figcaption>Before</figcaption>
+            <img src={sourceUrl} alt="Original input" className="preview-image" />
+          </figure>
+          <figure className="compare-pane">
+            <figcaption>After</figcaption>
+            <img src={objectUrl} alt="Converted output" className="preview-image" />
+          </figure>
+        </div>
+      )}
+      {isImage && !canCompare && (
         <div className="preview-frame">
           <img src={objectUrl} alt="Converted output" className="preview-image" />
         </div>

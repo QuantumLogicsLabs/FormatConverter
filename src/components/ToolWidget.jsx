@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { runTool, FORMATS, getTool } from '../converters/index.js'
+import { userFacingMessage, isAbortError } from '../lib/errors.js'
 import Dropzone from './Dropzone.jsx'
 import ProgressBar from './ProgressBar.jsx'
 import OptionsPanel from './OptionsPanel.jsx'
 import ResultPanel from './ResultPanel.jsx'
 import { formatBytes } from '../lib/format.js'
+
+const SOFT_WARN_BYTES = 100 * 1024 * 1024
 
 function loadOptions(toolId, schema) {
   const values = {}
@@ -29,6 +32,7 @@ function saveOptions(toolId, values) {
 }
 
 function acceptForFormats(formats) {
+  if (!formats?.length) return undefined
   return formats
     .flatMap((key) => {
       const fmt = FORMATS[key]
@@ -53,27 +57,46 @@ export default function ToolWidget({ toolId, initialFiles = null }) {
   const [progress, setProgress] = useState(null)
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
+  const abortRef = useRef(null)
 
   const hint = useMemo(() => {
-    const labels = formats.map((f) => FORMATS[f]?.label || f).join(', ')
     const min = tool?.inputs?.min || 1
+    if (!formats.length) return `Drag & drop files (${min}+), or click to browse`
+    const labels = formats.map((f) => FORMATS[f]?.label || f).join(', ')
     return `Drag & drop ${labels} files (${min}+), or click to browse`
   }, [formats, tool])
+
+  const largeWarn = useMemo(() => files.some((f) => (f.size || 0) > SOFT_WARN_BYTES), [files])
 
   const run = async (theFiles, opts) => {
     setStatus('converting')
     setProgress(null)
     setError('')
     saveOptions(toolId, opts)
+    const ac = new AbortController()
+    abortRef.current = ac
     try {
-      const res = await runTool(toolId, theFiles, { ...opts, onProgress: setProgress })
+      const res = await runTool(toolId, theFiles, {
+        ...opts,
+        onProgress: setProgress,
+        signal: ac.signal,
+      })
       setResult(res)
       setStatus('done')
     } catch (err) {
-      setError(err.message || 'Tool failed.')
+      if (isAbortError(err) || ac.signal.aborted) {
+        setError(userFacingMessage(err))
+        setStatus('error')
+        return
+      }
+      setError(userFacingMessage(err))
       setStatus('error')
+    } finally {
+      abortRef.current = null
     }
   }
+
+  const cancel = () => abortRef.current?.abort()
 
   const handleFiles = (incoming) => {
     const next = ordered ? [...files, ...incoming] : incoming
@@ -102,6 +125,8 @@ export default function ToolWidget({ toolId, initialFiles = null }) {
   }
 
   const reset = () => {
+    abortRef.current?.abort()
+    abortRef.current = null
     setFiles([])
     setResult(null)
     setError('')
@@ -128,12 +153,19 @@ export default function ToolWidget({ toolId, initialFiles = null }) {
         <div className="result">
           <div className="file-info">
             <div>
-              <strong>{files.length} file{files.length === 1 ? '' : 's'}</strong>
+              <strong>
+                {files.length} file{files.length === 1 ? '' : 's'}
+              </strong>
             </div>
             <button className="btn-link" onClick={reset}>
               Clear
             </button>
           </div>
+          {largeWarn && (
+            <p className="meta" role="status">
+              Large file detected (over 100 MB). This tool may be slow or run out of memory.
+            </p>
+          )}
           <ul className="queue">
             {files.map((f, i) => (
               <li key={`${f.name}-${i}`} className="queue-row">
@@ -184,6 +216,11 @@ export default function ToolWidget({ toolId, initialFiles = null }) {
       {status === 'converting' && (
         <div className="result">
           <ProgressBar progress={progress} />
+          <div className="toolbar-actions" style={{ justifyContent: 'flex-end', display: 'flex' }}>
+            <button type="button" className="btn" onClick={cancel}>
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 

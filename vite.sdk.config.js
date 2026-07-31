@@ -17,6 +17,10 @@ export default defineConfig({
           resolve(__dirname, 'node_modules/pdfjs-dist/build/pdf.worker.min.mjs'),
           resolve(__dirname, 'dist/pdf.worker.min.mjs'),
         )
+        copyFileSync(
+          resolve(__dirname, 'src/sdk/formatconvert.d.ts'),
+          resolve(__dirname, 'dist/formatconvert.d.ts'),
+        )
       },
     },
   ],

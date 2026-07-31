@@ -24,22 +24,25 @@ export async function detectFormat(file) {
   if (head[0] === 0 && head[1] === 0 && head[2] === 1 && head[3] === 0) return 'ico'
   if (ascii(head, 4, 8) === 'ftyp' && HEIC_BRANDS.includes(ascii(head, 8, 12).toLowerCase())) return 'heic'
 
-  // Zip container: DOCX / XLSX / EPUB
+// Zip container: DOCX / XLSX / EPUB / ODT / PPTX
   if (head[0] === 0x50 && head[1] === 0x4b && head[2] === 0x03 && head[3] === 0x04) {
     try {
       const JSZip = (await import('jszip')).default
       const zip = await JSZip.loadAsync(file)
       if (zip.file('word/document.xml')) return 'docx'
       if (zip.file('xl/workbook.xml')) return 'xlsx'
+      if (zip.file('ppt/presentation.xml')) return 'pptx'
+      if (zip.file('content.xml') && zip.file('META-INF/manifest.xml')) return 'odt'
       const mimeEntry = zip.file('mimetype')
       if (mimeEntry) {
         const mime = await mimeEntry.async('string')
         if (mime.includes('application/epub+zip')) return 'epub'
+        if (mime.includes('opendocument.text')) return 'odt'
       }
     } catch {
       // not a readable zip
     }
-    return null
+    return 'zip'
   }
 
   // TIFF (little / big endian)
@@ -86,6 +89,7 @@ export async function detectFormat(file) {
   if (lower.startsWith('<!doctype html') || lower.startsWith('<html')) return 'html'
   if (lower.startsWith('<?xml')) return 'xml'
   if (/^webvtt/i.test(trimmed)) return 'vtt'
+  if (/^\{\\rtf/i.test(trimmed)) return 'rtf'
   if (/^\[script info\]/i.test(trimmed)) {
     const ext = fromExtension(file.name)
     return ext === 'ssa' ? 'ssa' : 'ass'
@@ -108,7 +112,9 @@ export async function detectFormat(file) {
   }
 
   const byExt = fromExtension(file.name)
-  if (byExt === 'toml' || byExt === 'ass' || byExt === 'ssa') return byExt
+  if (byExt === 'toml' || byExt === 'ass' || byExt === 'ssa' || byExt === 'rtf' || byExt === 'ini' || byExt === 'jsonl') {
+    return byExt
+  }
 
   // csv / tsv / yaml: extension only (too ambiguous by content)
   if (byExt === 'csv' || byExt === 'tsv' || byExt === 'yaml') return byExt

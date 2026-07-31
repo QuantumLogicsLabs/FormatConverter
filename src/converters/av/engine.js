@@ -4,6 +4,7 @@
  */
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { idbGet, idbSet } from '../../lib/idbCache.js'
+import { FormatConvertError, ErrorCodes } from '../../lib/errors.js'
 
 let ffmpeg = null
 let loading = null
@@ -24,7 +25,8 @@ export function getLastFFmpegLoadSource() {
 export function assertAvFileSize(file) {
   const size = file?.size || 0
   if (size > AV_HARD_BYTES) {
-    throw new Error(
+    throw new FormatConvertError(
+      ErrorCodes.TOO_LARGE,
       'This media file is larger than 600 MB. Browser memory limits make conversion unreliable — please use a smaller file.'
     )
   }

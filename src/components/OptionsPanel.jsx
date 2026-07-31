@@ -56,6 +56,13 @@ export default function OptionsPanel({ schema, values, onChange }) {
               onChange={(e) => set(opt.key, e.target.value ? Number(e.target.value) : null)}
             />
           )}
+          {opt.type === 'boolean' && (
+            <input
+              type="checkbox"
+              checked={!!values[opt.key]}
+              onChange={(e) => set(opt.key, e.target.checked)}
+            />
+          )}
           {opt.type === 'text' && (
             <input
               type="text"

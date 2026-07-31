@@ -20,7 +20,7 @@ export default function ProgressBar({ progress }) {
   }
 
   return (
-    <div className="progress">
+    <div className="progress" role="status" aria-live="polite" aria-busy={pct === undefined || pct < 100}>
       <div className="progress-bar">
         <div
           className={`progress-fill ${pct === undefined ? 'indeterminate' : ''}`}
