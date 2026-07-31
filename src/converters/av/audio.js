@@ -12,6 +12,7 @@ export const AUDIO_OUT = {
     mime: 'audio/opus',
     args: (inp, out) => ['-i', inp, '-vn', '-c:a', 'libopus', '-b:a', '128k', out],
   },
+  aac: { ext: 'aac', mime: 'audio/aac', args: (inp, out) => ['-i', inp, '-vn', '-c:a', 'aac', '-b:a', '192k', out] },
 }
 
 async function assertOpusEncoder(onProgress) {

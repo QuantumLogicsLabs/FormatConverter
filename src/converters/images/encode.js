@@ -27,6 +27,21 @@ export function prepareCanvas(canvas, { width, background = '#ffffff', flatten =
   return out
 }
 
+/**
+ * Best-effort raster → SVG: no vector tracing, just an <svg> wrapping an
+ * embedded PNG data URL so the file opens correctly anywhere SVG is expected.
+ */
+function encodeSvg(canvas) {
+  const dataUrl = canvas.toDataURL('image/png')
+  const svg =
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ` +
+    `width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}">\n` +
+    `  <image width="${canvas.width}" height="${canvas.height}" xlink:href="${dataUrl}" href="${dataUrl}"/>\n` +
+    `</svg>\n`
+  return new Blob([svg], { type: 'image/svg+xml;charset=utf-8' })
+}
+
 export async function encodeCanvas(canvas, to, options = {}) {
   const prepared = prepareCanvas(canvas, {
     width: options.width,
@@ -48,6 +63,7 @@ export async function encodeCanvas(canvas, to, options = {}) {
     const { encodeAvifFile } = await import('./avif.js')
     return encodeAvifFile(prepared, options)
   }
+  if (to === 'svg') return encodeSvg(prepared)
 
   const mime = CANVAS_MIME[to]
   if (!mime) throw new Error(`Cannot encode to ${to} in the browser.`)

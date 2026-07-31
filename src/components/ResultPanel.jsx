@@ -15,6 +15,8 @@ export default function ResultPanel({ result, onReset, sourceFile = null }) {
 
   const [text, setText] = useState('')
   const [copied, setCopied] = useState(false)
+  const [mode, setMode] = useState('side') // side | slider
+  const [slider, setSlider] = useState(50)
   const objectUrl = useMemo(
     () => (isImage || isPdf ? URL.createObjectURL(blob) : null),
     [blob, isImage, isPdf]
@@ -44,6 +46,15 @@ export default function ResultPanel({ result, onReset, sourceFile = null }) {
           {filename} · {formatBytes(blob.size)}
         </span>
         <div className="toolbar-actions">
+          {canCompare && (
+            <button
+              type="button"
+              className="btn"
+              onClick={() => setMode((m) => (m === 'side' ? 'slider' : 'side'))}
+            >
+              {mode === 'side' ? 'Slider compare' : 'Side by side'}
+            </button>
+          )}
           {isText && (
             <button className="btn" onClick={handleCopy}>
               {copied ? 'Copied!' : 'Copy'}
@@ -56,7 +67,7 @@ export default function ResultPanel({ result, onReset, sourceFile = null }) {
       </div>
 
       {isText && <textarea className="output" value={text} readOnly />}
-      {isImage && canCompare && (
+      {isImage && canCompare && mode === 'side' && (
         <div className="compare-preview" data-compare="1">
           <figure className="compare-pane">
             <figcaption>Before</figcaption>
@@ -66,6 +77,27 @@ export default function ResultPanel({ result, onReset, sourceFile = null }) {
             <figcaption>After</figcaption>
             <img src={objectUrl} alt="Converted output" className="preview-image" />
           </figure>
+        </div>
+      )}
+      {isImage && canCompare && mode === 'slider' && (
+        <div className="compare-slider" data-compare="1">
+          <div className="compare-slider-frame">
+            <img src={sourceUrl} alt="Original input" className="preview-image" />
+            <div className="compare-slider-after" style={{ width: `${slider}%` }}>
+              <img src={objectUrl} alt="Converted output" className="preview-image" />
+            </div>
+          </div>
+          <label className="meta">
+            Compare
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={slider}
+              onChange={(e) => setSlider(Number(e.target.value))}
+              aria-label="Compare before and after"
+            />
+          </label>
         </div>
       )}
       {isImage && !canCompare && (

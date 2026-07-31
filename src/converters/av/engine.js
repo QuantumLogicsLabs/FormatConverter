@@ -4,34 +4,18 @@
  */
 import { FFmpeg } from '@ffmpeg/ffmpeg'
 import { idbGet, idbSet } from '../../lib/idbCache.js'
-import { FormatConvertError, ErrorCodes } from '../../lib/errors.js'
+import { FormatConvertError } from '../../lib/errors.js'
+import { assertAvFileSize, getLastFFmpegLoadSource, setLastFFmpegLoadSource } from './limits.js'
+
+export { assertAvFileSize, getLastFFmpegLoadSource }
 
 let ffmpeg = null
 let loading = null
 let encodersCache = null
-/** @type {'network'|'cache'|null} */
-let lastLoadSource = null
 
 const BASE = '/ffmpeg'
 const IDB_WASM = 'ffmpeg-core.wasm'
 const IDB_JS = 'ffmpeg-core.js'
-const AV_SOFT_BYTES = 100 * 1024 * 1024
-const AV_HARD_BYTES = 600 * 1024 * 1024
-
-export function getLastFFmpegLoadSource() {
-  return lastLoadSource
-}
-
-export function assertAvFileSize(file) {
-  const size = file?.size || 0
-  if (size > AV_HARD_BYTES) {
-    throw new FormatConvertError(
-      ErrorCodes.TOO_LARGE,
-      'This media file is larger than 600 MB. Browser memory limits make conversion unreliable — please use a smaller file.'
-    )
-  }
-  return size > AV_SOFT_BYTES
-}
 
 async function fetchWithProgress(url, onProgress, label) {
   const res = await fetch(url)
@@ -116,7 +100,7 @@ export async function getFFmpeg(onProgress = () => {}) {
       onProgress,
       'Downloading conversion engine…'
     )
-    lastLoadSource = wasm.fromCache && js.fromCache ? 'cache' : 'network'
+    setLastFFmpegLoadSource(wasm.fromCache && js.fromCache ? 'cache' : 'network')
 
     const wasmURL = URL.createObjectURL(new Blob([wasm.buffer], { type: 'application/wasm' }))
     const coreURL = URL.createObjectURL(new Blob([js.buffer], { type: 'text/javascript' }))

@@ -10,6 +10,7 @@ export const ErrorCodes = {
   ABORTED: 'ABORTED',
   ENGINE_MISSING: 'ENGINE_MISSING',
   PARSE_FAILED: 'PARSE_FAILED',
+  ENCRYPT_PDF: 'ENCRYPT_PDF',
   UNKNOWN: 'UNKNOWN',
 }
 
@@ -41,6 +42,10 @@ const COPY = {
   [ErrorCodes.PARSE_FAILED]: {
     title: 'Could not read this file',
     hint: 'The file may be corrupted, encrypted, or not the format we detected.',
+  },
+  [ErrorCodes.ENCRYPT_PDF]: {
+    title: 'This PDF is password-protected',
+    hint: 'Use the Unlock PDF tool with the correct password, then try again.',
   },
   [ErrorCodes.UNKNOWN]: {
     title: 'Something went wrong',
@@ -75,6 +80,9 @@ export function toFormatConvertError(err) {
   const msg = err?.message || String(err || 'Unknown error')
   if (isOomMessage(msg)) {
     return new FormatConvertError(ErrorCodes.OOM, COPY[ErrorCodes.OOM].title, { cause: err })
+  }
+  if (/password|PasswordException|No password given/i.test(msg) || err?.name === 'PasswordException') {
+    return new FormatConvertError(ErrorCodes.ENCRYPT_PDF, msg, { cause: err })
   }
   if (/600 MB|too large|larger than/i.test(msg)) {
     return new FormatConvertError(ErrorCodes.TOO_LARGE, msg, { cause: err })

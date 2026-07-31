@@ -3,6 +3,7 @@
  */
 import { fileToTable, tableToCsvBlob } from './csv.js'
 import { parseXlsx, tableToXlsxBlob, tablesToXlsxBlob } from './xlsx.js'
+import { parseOds } from './odsIn.js'
 import { parseJson, jsonToTable, tableToJsonBlob, valueToJsonBlob, cloneValue } from './json.js'
 import { parseYamlFile, yamlToTable, tableToYamlBlob, valueToYamlBlob } from './yaml.js'
 import { parseTomlFile, tomlToTable, tableToTomlBlob, valueToTomlBlob } from './toml.js'
@@ -14,11 +15,17 @@ import { tableToObjects } from './tableModel.js'
 import JSZip from 'jszip'
 
 const DELIM = { csv: ',', tsv: '\t' }
+// xls parses through the same SheetJS reader as xlsx; ods gets its own JSZip/XML reader.
+const SPREADSHEET_FORMATS = new Set(['xlsx', 'xls', 'ods'])
+
+function parseSpreadsheet(file, from, options) {
+  return from === 'ods' ? parseOds(file, options) : parseXlsx(file, options)
+}
 
 async function toTable(file, from, options) {
   if (from === 'csv' || from === 'tsv') return fileToTable(file, DELIM[from])
-  if (from === 'xlsx') {
-    const { single } = await parseXlsx(file, { sheet: options.sheet || 'first' })
+  if (SPREADSHEET_FORMATS.has(from)) {
+    const { single } = await parseSpreadsheet(file, from, { sheet: options.sheet || 'first' })
     return single
   }
   if (from === 'json') return jsonToTable(await parseJson(file))
@@ -74,9 +81,9 @@ export default async function convertData(file, options = {}, onProgress = () =>
     if (to === 'xml') return valueToXmlBlob(value)
   }
 
-  // Multi-sheet xlsx → zip of per-sheet outputs
-  if (from === 'xlsx' && (options.sheet || 'first') === 'all') {
-    const { tables } = await parseXlsx(file, { sheet: 'all' })
+  // Multi-sheet workbook → zip of per-sheet outputs
+  if (SPREADSHEET_FORMATS.has(from) && (options.sheet || 'first') === 'all') {
+    const { tables } = await parseSpreadsheet(file, from, { sheet: 'all' })
     onProgress({ stage: 'encode' })
     if (to === 'csv' || to === 'tsv') {
       const zip = new JSZip()

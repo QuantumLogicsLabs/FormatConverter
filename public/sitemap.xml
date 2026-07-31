@@ -331,6 +331,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/png-to-svg</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/png-to-pdf</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
@@ -380,6 +386,12 @@
   </url>
   <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/jpg-to-avif</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/jpg-to-svg</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -439,6 +451,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/webp-to-svg</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/webp-to-pdf</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
@@ -493,6 +511,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/bmp-to-svg</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/bmp-to-pdf</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
@@ -542,6 +566,12 @@
   </url>
   <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/gif-to-avif</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/gif-to-svg</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -619,6 +649,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/heic-to-svg</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/heic-to-pdf</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
@@ -673,6 +709,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/tiff-to-svg</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/tiff-to-pdf</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
@@ -722,6 +764,12 @@
   </url>
   <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/avif-to-tiff</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/avif-to-svg</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -824,6 +872,12 @@
   </url>
   <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/ico-to-avif</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ico-to-svg</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -1537,6 +1591,174 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/xls-to-csv</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/xls-to-tsv</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/xls-to-xlsx</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/xls-to-json</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/xls-to-jsonl</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/xls-to-yaml</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/xls-to-toml</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/xls-to-ini</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/xls-to-xml</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/xls-to-md</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/xls-to-html</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/xls-to-txt</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/xls-to-pdf</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/xls-to-docx</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ods-to-csv</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ods-to-tsv</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ods-to-xlsx</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ods-to-json</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ods-to-jsonl</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ods-to-yaml</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ods-to-toml</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ods-to-ini</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ods-to-xml</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ods-to-md</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ods-to-html</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ods-to-txt</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ods-to-pdf</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ods-to-docx</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/epub-to-html</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
@@ -1693,6 +1915,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/mp3-to-aac</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/wav-to-mp3</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
@@ -1718,6 +1946,12 @@
   </url>
   <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/wav-to-opus</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/wav-to-aac</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -1753,6 +1987,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/ogg-to-aac</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/flac-to-mp3</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
@@ -1778,6 +2018,12 @@
   </url>
   <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/flac-to-opus</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/flac-to-aac</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -1813,6 +2059,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/m4a-to-aac</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/opus-to-mp3</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
@@ -1838,6 +2090,48 @@
   </url>
   <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/opus-to-m4a</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/opus-to-aac</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/aac-to-mp3</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/aac-to-wav</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/aac-to-ogg</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/aac-to-flac</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/aac-to-m4a</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/aac-to-opus</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -1897,6 +2191,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/mp4-to-aac</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/webm-to-mp4</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
@@ -1951,6 +2251,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/webm-to-aac</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/mov-to-mp4</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
@@ -2000,6 +2306,12 @@
   </url>
   <url>
     <loc>https://formatconvert.quantumlogicslimited.com/convert/mov-to-opus</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/convert/mov-to-aac</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -2102,6 +2414,36 @@
   </url>
   <url>
     <loc>https://formatconvert.quantumlogicslimited.com/tools/unzip</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/tools/unlock-pdf</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/tools/compress-image</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/tools/resize-image</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/tools/trim-video</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://formatconvert.quantumlogicslimited.com/tools/ocr-pages</loc>
     <lastmod>2026-07-31</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

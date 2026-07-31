@@ -26,7 +26,7 @@ Guides for integrators and contributors: [`docs/`](./docs/README.md).
   gap heuristics, and table-ish spacing. Optional OCR: `auto` (empty pages), `force`, or `off`.
 - PDF → Markdown infers headings from font sizes, keeps bold text, and detects bullet lists.
 - TXT → PDF supports font / size / margin / line-height / Unicode (Noto Sans) and optional
-  Markdown layout mode.
+  Markdown layout mode. CJK text triggers an on-demand Noto Sans SC subset download (cached).
 - Markdown/HTML → PDF is typeset by a custom layout engine on jsPDF: headings, lists, tables,
   fenced code blocks, blockquotes, links, page numbers, word wrap and page breaks.
 - Word documents are parsed with `mammoth` on the way in and generated as real .docx
@@ -40,13 +40,13 @@ other languages stream on first use.
 
 | Inputs | Outputs |
 | --- | --- |
-| PNG, JPEG, WebP, BMP, GIF, SVG, HEIC, ICO, TIFF, AVIF | PNG, JPEG, WebP, BMP, ICO, GIF, TIFF, AVIF, PDF |
+| PNG, JPEG, WebP, BMP, GIF, SVG, HEIC, ICO, TIFF, AVIF | PNG, JPEG, WebP, BMP, ICO, GIF, TIFF, AVIF, SVG (embedded raster), PDF |
 
-**Data** — CSV, TSV, Excel, JSON, JSONL/NDJSON, YAML, TOML, INI, XML (among themselves and to MD/HTML/TXT/PDF/DOCX).
+**Data** — CSV, TSV, Excel (XLSX + legacy XLS), ODS, JSON, JSONL/NDJSON, YAML, TOML, INI, XML (among themselves and to MD/HTML/TXT/PDF/DOCX).
 
-**Subtitles** — SRT, VTT, ASS, SSA, TXT. **Audio / video** — mp3/wav/ogg/flac/m4a/opus and mp4/webm/mov/gif via ffmpeg.wasm (keep media under ~500 MB; WebM/Opus gated on encoder availability). Video pairs support optional scale width and mute.
+**Subtitles** — SRT, VTT, ASS, SSA, TXT. **Audio / video** — mp3/wav/ogg/flac/m4a/aac/opus and mp4/webm/mov/gif via ffmpeg.wasm (keep media under ~500 MB; WebM/Opus gated on encoder availability). Video pairs support optional scale width and mute.
 
-**Tools** — merge/split/rotate/reorder/extract/compress/watermark/page-numbers/redact PDF; images-to-pdf/gif; crop/rotate image; trim/normalize audio; zip/unzip.
+**Tools** — merge/split/rotate/reorder/extract/compress/watermark/page-numbers/redact/unlock PDF; images-to-pdf/gif; crop/rotate/compress/resize image; trim/normalize audio; trim video; OCR pages; zip/unzip.
 
 **Batch** — drop any number of files on a converter page; each converts independently with a
 per-file queue, and results download individually or as one zip. Also in the SDK as

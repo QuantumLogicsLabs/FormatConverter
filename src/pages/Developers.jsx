@@ -95,14 +95,20 @@ const GLOBAL_EXAMPLE = `<script type="module" src="${ORIGIN}/sdk.js"></script>
 </script>`
 
 const EMBED_EXAMPLE = `<iframe
-  src="${ORIGIN}/embed?from=pdf&to=md&theme=light"
+  id="fc"
+  src="${ORIGIN}/embed?from=pdf&to=md&theme=light&parentOrigin=https://yoursite.example"
   width="480" height="420" style="border:0; border-radius:12px"
 ></iframe>
 
 <script>
-  // Receive the converted file from the iframe
+  // Pass parentOrigin so postMessage targets only your site. CSP allows framing
+  // (frame-ancestors *); always verify event.origin === FormatConvert origin.
   window.addEventListener('message', (event) => {
     if (event.origin !== '${ORIGIN}') return
+    if (event.data?.type === 'formatconvert:height') {
+      document.getElementById('fc').style.height = event.data.height + 'px'
+      return
+    }
     if (event.data?.type !== 'formatconvert:result') return
     const { blob, filename, from, to } = event.data
     // blob is a real Blob — save it, upload it, read it
@@ -279,10 +285,21 @@ const { blob, filename } = await runTool('merge-pdf', pdfFiles)`}
             our servers (there are none).
           </li>
           <li>
+            <strong>v7 production:</strong> cross-origin embed via <code>frame-ancestors *</code>,
+            preferred <code>parentOrigin</code> on <code>/embed</code>, modular <code>/sdk.js</code>{' '}
+            facade with on-demand <code>/sdk/*</code> chunks (facade gzip budget), plus XLS/ODS/SVG-out/AAC,
+            unlock-pdf / compress-image / trim-video / ocr-pages, history re-run, and registry-synced types.
+          </li>
+          <li>
             <strong>v6 production:</strong> typed errors with recovery hints, AbortSignal cancel for
             convert/tools, worker terminate on abort (no OOM→main retry), CI + worker gzip budget,
-            CSP/security headers, command palette (Ctrl/Cmd+K), favorites, embed{' '}
-            <code>parentOrigin</code> / height messages, and <code>formatconvert.d.ts</code>.
+            CSP/security headers, command palette (Ctrl/Cmd+K), favorites, embed height messages, and{' '}
+            <code>formatconvert.d.ts</code>.
+          </li>
+          <li>
+            <strong>SDK loading:</strong> import <code>{ORIGIN}/sdk.js</code> as before. Heavy converters
+            load as separate ES chunks under <code>{ORIGIN}/sdk/</code> (CORS enabled). First use of a
+            kind may fetch an extra chunk; the facade stays small.
           </li>
           <li>
             <strong>SDK threading:</strong> the public <code>/sdk.js</code> bundle always runs

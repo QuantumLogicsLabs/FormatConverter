@@ -185,10 +185,15 @@ export default function Home() {
       )}
 
       {recent.length > 0 && (
-        <div className="recent-strip" aria-label="Recent conversions">
+        <div className="recent-strip" aria-label="Recent conversions" data-kind="recent">
           {recent.map((e) => (
-            <Link key={`${e.from}-${e.to}`} to={`/convert/${e.from}-to-${e.to}`}>
+            <Link
+              key={`${e.from}-${e.to}`}
+              to={`/convert/${e.from}-to-${e.to}`}
+              title="Run again — last options are remembered on the converter page"
+            >
               {FORMATS[e.from]?.label || e.from} → {FORMATS[e.to]?.label || e.to}
+              <span className="meta recent-rerun"> Run again</span>
             </Link>
           ))}
         </div>

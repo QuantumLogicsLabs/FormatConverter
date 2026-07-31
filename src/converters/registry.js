@@ -29,13 +29,15 @@ export const FORMATS = {
   bmp:  { label: 'BMP',      kind: 'image', exts: ['bmp'], mime: 'image/bmp', input: true, output: true },
   ico:  { label: 'ICO',      kind: 'image', exts: ['ico'], mime: 'image/x-icon', input: true, output: true },
   gif:  { label: 'GIF',      kind: 'image', exts: ['gif'], mime: 'image/gif', input: true, output: true },
-  svg:  { label: 'SVG',      kind: 'image', exts: ['svg'], mime: 'image/svg+xml', input: true, output: false },
+  svg:  { label: 'SVG',      kind: 'image', exts: ['svg'], mime: 'image/svg+xml', input: true, output: true },
   heic: { label: 'HEIC',     kind: 'image', exts: ['heic', 'heif'], mime: 'image/heic', input: true, output: false },
   tiff: { label: 'TIFF',     kind: 'image', exts: ['tiff', 'tif'], mime: 'image/tiff', input: true, output: true },
   avif: { label: 'AVIF',     kind: 'image', exts: ['avif'], mime: 'image/avif', input: true, output: true },
   csv:  { label: 'CSV',      kind: 'data', exts: ['csv'], mime: 'text/csv', input: true, output: true },
   tsv:  { label: 'TSV',      kind: 'data', exts: ['tsv', 'tab'], mime: 'text/tab-separated-values', input: true, output: true },
   xlsx: { label: 'Excel',    kind: 'data', exts: ['xlsx'], mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', input: true, output: true },
+  xls:  { label: 'Excel 97-2003', kind: 'data', exts: ['xls'], mime: 'application/vnd.ms-excel', input: true, output: false },
+  ods:  { label: 'OpenDocument Sheet', kind: 'data', exts: ['ods'], mime: 'application/vnd.oasis.opendocument.spreadsheet', input: true, output: false },
   json: { label: 'JSON',     kind: 'data', exts: ['json'], mime: 'application/json', input: true, output: true },
   yaml: { label: 'YAML',     kind: 'data', exts: ['yaml', 'yml'], mime: 'application/yaml', input: true, output: true },
   toml: { label: 'TOML',     kind: 'data', exts: ['toml'], mime: 'application/toml', input: true, output: true },
@@ -57,6 +59,7 @@ export const FORMATS = {
   flac: { label: 'FLAC',     kind: 'audio', exts: ['flac'], mime: 'audio/flac', input: true, output: true },
   m4a:  { label: 'M4A',      kind: 'audio', exts: ['m4a'], mime: 'audio/mp4', input: true, output: true },
   opus: { label: 'Opus',     kind: 'audio', exts: ['opus'], mime: 'audio/opus', input: true, output: true },
+  aac:  { label: 'AAC',      kind: 'audio', exts: ['aac'], mime: 'audio/aac', input: true, output: true },
   mp4:  { label: 'MP4',      kind: 'video', exts: ['mp4'], mime: 'video/mp4', input: true, output: true },
   webm: { label: 'WebM',     kind: 'video', exts: ['webm'], mime: 'video/webm', input: true, output: true },
   mov:  { label: 'MOV',      kind: 'video', exts: ['mov'], mime: 'video/quicktime', input: true, output: false },
@@ -264,7 +267,7 @@ register('pdf', 'avif', () => import('./images/pdfToImages.js'), [OPT_SCALE, OPT
 
 // Images — decode to canvas, transform, re-encode.
 const IMAGE_INPUTS = ['png', 'jpg', 'webp', 'bmp', 'gif', 'svg', 'heic', 'ico', 'tiff', 'avif']
-const IMAGE_OUTPUTS = ['png', 'jpg', 'webp', 'bmp', 'ico', 'gif', 'tiff', 'avif']
+const IMAGE_OUTPUTS = ['png', 'jpg', 'webp', 'bmp', 'ico', 'gif', 'tiff', 'avif', 'svg']
 for (const from of IMAGE_INPUTS) {
   for (const to of IMAGE_OUTPUTS) {
     if (from === to) continue
@@ -293,6 +296,18 @@ for (const from of DATA) {
   }
 }
 
+// XLS / ODS — read-only spreadsheet sources (never a conversion target), always
+// on main since they share the xlsx SheetJS/JSZip parsing path.
+for (const from of ['xls', 'ods']) {
+  for (const to of DATA) {
+    register(from, to, loadData, [OPT_SHEET], { env: 'main' })
+  }
+  for (const to of DATA_DOC_OUT) {
+    const opts = to === 'pdf' ? [OPT_SHEET, OPT_PAGE_SIZE] : [OPT_SHEET]
+    register(from, to, loadData, opts, { env: 'main' })
+  }
+}
+
 // Ebooks
 register('epub', 'html', () => import('./ebook/epubIn.js'))
 register('epub', 'md', () => import('./ebook/epubIn.js'))
@@ -317,7 +332,7 @@ for (const from of SUBS) {
 }
 
 // Audio (ffmpeg.wasm — main thread; ffmpeg owns its worker)
-const AUDIO = ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'opus']
+const AUDIO = ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'opus', 'aac']
 for (const from of AUDIO) {
   for (const to of AUDIO) {
     if (from === to) continue
@@ -327,7 +342,7 @@ for (const from of AUDIO) {
 
 // Video — inputs mp4/webm/mov/gif → mp4 / webm / gif / audio extract
 const VIDEO_IN = ['mp4', 'webm', 'mov']
-const VIDEO_AUDIO_OUT = ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'opus']
+const VIDEO_AUDIO_OUT = ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'opus', 'aac']
 for (const from of VIDEO_IN) {
   register(from, 'mp4', () => import('./av/video.js'), OPT_VIDEO)
   register(from, 'webm', () => import('./av/video.js'), OPT_VIDEO)

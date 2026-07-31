@@ -1,3 +1,8 @@
+/**
+ * SheetJS reads both OOXML (.xlsx, zip) and legacy BIFF (.xls, OLE compound)
+ * workbooks through the same `XLSX.read(buf, { type: 'array' })` call — the
+ * container format is auto-detected from the bytes, not the file extension.
+ */
 import * as XLSX from 'xlsx'
 import { makeTable, tableToObjects } from './tableModel.js'
 

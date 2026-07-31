@@ -18,7 +18,12 @@ export {
   toFormatConvertError,
 }
 
-export { getLastFFmpegLoadSource, resetFFmpeg, assertAvFileSize } from './av/engine.js'
+export { getLastFFmpegLoadSource, assertAvFileSize } from './av/limits.js'
+
+export async function resetFFmpeg() {
+  const { resetFFmpeg: fn } = await import('./av/engine.js')
+  return fn()
+}
 
 function baseName(name = 'converted') {
   const i = name.lastIndexOf('.')

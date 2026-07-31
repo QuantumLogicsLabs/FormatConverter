@@ -47,6 +47,9 @@ export const getTool = api.getTool
 export const getLastFFmpegLoadSource = api.getLastFFmpegLoadSource
 export const resetFFmpeg = api.resetFFmpeg
 export const assertAvFileSize = api.assertAvFileSize
+export const FormatConvertError = api.FormatConvertError
+export const ErrorCodes = api.ErrorCodes
+export const toFormatConvertError = api.toFormatConvertError
 
 // Also expose a global for consumers loading via <script type="module" src>
 if (typeof window !== 'undefined') {

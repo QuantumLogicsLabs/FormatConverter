@@ -67,6 +67,24 @@ const OPT_COMPRESS_MODE = {
   ],
   help: 'Lossless rewrites the PDF structure. Smaller rasterizes pages to JPEG (quality loss).',
 }
+const OPT_PASSWORD = {
+  key: 'password', label: 'Password', type: 'password', default: '',
+  help: 'The password that opens this PDF.',
+}
+const OPT_OCR_LANGUAGE = {
+  key: 'ocrLanguage', label: 'OCR language', type: 'select', default: 'eng',
+  choices: [
+    { value: 'eng', label: 'English' },
+    { value: 'spa', label: 'Spanish' },
+    { value: 'fra', label: 'French' },
+    { value: 'deu', label: 'German' },
+    { value: 'por', label: 'Portuguese' },
+    { value: 'ara', label: 'Arabic' },
+    { value: 'hin', label: 'Hindi' },
+    { value: 'chi_sim', label: 'Chinese (Simplified)' },
+  ],
+  help: 'Language of the text in the image/PDF. English is bundled; others download on first use.',
+}
 
 registerTool('merge-pdf', {
   label: 'Merge PDFs',
@@ -307,4 +325,70 @@ registerTool('unzip', {
   inputs: { formats: ['zip'], min: 1, max: 1, ordered: false },
   output: 'zip',
   load: () => import('./pdf/unzipFiles.js'),
+})
+
+registerTool('unlock-pdf', {
+  label: 'Unlock PDF',
+  description: 'Remove password protection from a PDF (best-effort page-image rebuild).',
+  inputs: { formats: ['pdf'], min: 1, max: 1, ordered: false },
+  output: 'pdf',
+  options: [OPT_PASSWORD],
+  load: () => import('./pdf/unlockPdf.js'),
+})
+
+registerTool('compress-image', {
+  label: 'Compress image',
+  description: 'Re-encode a photo as JPEG or WebP at a lower quality to shrink file size.',
+  inputs: { formats: IMAGE_TOOL_FORMATS, min: 1, max: 1, ordered: false },
+  output: 'jpg',
+  options: [
+    {
+      key: 'to', label: 'Output format', type: 'select', default: 'jpg',
+      choices: [{ value: 'jpg', label: 'JPEG' }, { value: 'webp', label: 'WebP' }],
+    },
+    {
+      key: 'quality', label: 'Quality', type: 'range', default: 0.7, min: 0.1, max: 1, step: 0.01,
+      help: 'Lower quality means a smaller file.',
+    },
+  ],
+  load: () => import('./images/compressImage.js'),
+})
+
+registerTool('resize-image', {
+  label: 'Resize image',
+  description: 'Scale an image to a target width, keeping the aspect ratio.',
+  inputs: { formats: IMAGE_TOOL_FORMATS, min: 1, max: 1, ordered: false },
+  output: 'png',
+  options: [
+    {
+      key: 'width', label: 'Width (px)', type: 'number', default: 800, min: 1, max: 16384,
+      help: 'Height scales automatically to keep the aspect ratio.',
+    },
+    {
+      key: 'to', label: 'Output format', type: 'select', default: 'png',
+      choices: [{ value: 'png', label: 'PNG' }, { value: 'jpg', label: 'JPEG' }],
+    },
+  ],
+  load: () => import('./images/resizeImage.js'),
+})
+
+registerTool('trim-video', {
+  label: 'Trim video',
+  description: 'Cut a clip from a video file (start + duration in seconds).',
+  inputs: { formats: ['mp4', 'webm', 'mov'], min: 1, max: 1, ordered: false },
+  output: 'mp4',
+  options: [
+    { key: 'start', label: 'Start (s)', type: 'number', default: 0, min: 0 },
+    { key: 'duration', label: 'Duration (s)', type: 'number', default: 5, min: 0.1 },
+  ],
+  load: () => import('./av/trimVideo.js'),
+})
+
+registerTool('ocr-pages', {
+  label: 'OCR pages',
+  description: 'Recognize text from one or more images and/or PDF pages into one text file.',
+  inputs: { formats: ['png', 'jpg', 'webp', 'bmp', 'gif', 'heic', 'tiff', 'avif', 'pdf'], min: 1, max: 50, ordered: true },
+  output: 'txt',
+  options: [OPT_OCR_LANGUAGE],
+  load: () => import('./ocr/ocrPages.js'),
 })

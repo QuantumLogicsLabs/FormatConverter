@@ -8,7 +8,7 @@ async function loadPdf(file) {
   } catch (e) {
     const msg = e?.message || String(e)
     if (/encrypt|password|encrypted/i.test(msg)) {
-      throw new Error('This PDF is encrypted. Decrypt it first, then try again.')
+      throw new Error('This PDF is password-protected. Use the Unlock PDF tool to remove the password, then try again.')
     }
     throw new Error(`Could not read PDF: ${msg}`)
   }
