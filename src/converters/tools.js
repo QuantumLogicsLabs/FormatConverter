@@ -37,8 +37,12 @@ export function listTools() {
 
 const OPT_PAGE_SIZE = {
   key: 'pageSize', label: 'Page size', type: 'select', default: 'a4',
-  choices: [{ value: 'a4', label: 'A4' }, { value: 'letter', label: 'US Letter' }],
-  help: 'Paper size of each page in the generated PDF.',
+  choices: [
+    { value: 'a4', label: 'A4' },
+    { value: 'letter', label: 'US Letter' },
+    { value: 'original', label: 'Original (image size)' },
+  ],
+  help: 'Paper size of each page in the generated PDF, or match each image exactly.',
 }
 const OPT_ANGLE = {
   key: 'angle', label: 'Rotation', type: 'select', default: 90,

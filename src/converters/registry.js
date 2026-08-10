@@ -74,6 +74,11 @@ const OPT_PAGE_SIZE = {
   choices: [{ value: 'a4', label: 'A4' }, { value: 'letter', label: 'US Letter' }],
   help: 'Paper size of the generated PDF.',
 }
+const OPT_PAGE_SIZE_IMG = {
+  ...OPT_PAGE_SIZE,
+  choices: [...OPT_PAGE_SIZE.choices, { value: 'original', label: 'Original (image size)' }],
+  help: 'Paper size of the generated PDF, or match the image exactly.',
+}
 const OPT_FONT_SIZE = {
   key: 'fontSize', label: 'Font size', type: 'number', default: 11, min: 8, max: 24,
   help: 'Body text size in points.',
@@ -273,7 +278,7 @@ for (const from of IMAGE_INPUTS) {
     if (from === to) continue
     register(from, to, () => import('./images/imageConvert.js'), imageOutputOptions(to))
   }
-  register(from, 'pdf', () => import('./images/imageToPdf.js'), [OPT_PAGE_SIZE])
+  register(from, 'pdf', () => import('./images/imageToPdf.js'), [OPT_PAGE_SIZE_IMG])
 }
 
 // Data formats — tabular IR + tree bridging.

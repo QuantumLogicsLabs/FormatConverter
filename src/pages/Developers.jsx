@@ -160,7 +160,7 @@ export default function Developers() {
             </tr>
           </thead>
           <tbody>
-            <tr><td><code>pageSize</code></td><td>any → PDF</td><td><code>'a4'</code> (default) or <code>'letter'</code></td></tr>
+            <tr><td><code>pageSize</code></td><td>any → PDF</td><td><code>'a4'</code> (default), <code>'letter'</code>, or <code>'original'</code> (image → PDF only, matches the image exactly)</td></tr>
             <tr><td><code>font</code></td><td>TXT/MD/HTML/DOCX → PDF</td><td><code>helvetica</code>, <code>times</code>, <code>courier</code>, or <code>noto</code> (Unicode)</td></tr>
             <tr><td><code>fontSize</code></td><td>→ PDF</td><td>Body size in pt (default 11)</td></tr>
             <tr><td><code>margin</code></td><td>→ PDF</td><td>Page margin in pt (default 64)</td></tr>
