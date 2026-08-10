@@ -16,6 +16,7 @@ function canvasHasAlpha(canvas) {
 export default async function imagesToPdf(files, options = {}, onProgress = () => {}) {
   if (!files?.length) throw new Error('Add at least one image.')
   const pageSize = options.pageSize || 'a4'
+  const original = pageSize === 'original'
   let doc = null
 
   for (let i = 0; i < files.length; i++) {
@@ -25,16 +26,17 @@ export default async function imagesToPdf(files, options = {}, onProgress = () =
     const canvas = await decodeImage(file, format)
 
     const orientation = canvas.width > canvas.height ? 'landscape' : 'portrait'
+    const format_ = original ? [canvas.width, canvas.height] : pageSize
     if (!doc) {
-      doc = new jsPDF({ unit: 'pt', format: pageSize, orientation, compress: true })
+      doc = new jsPDF({ unit: 'pt', format: format_, orientation, compress: true })
     } else {
-      doc.addPage(pageSize, orientation)
+      doc.addPage(format_, orientation)
     }
 
     const pageW = doc.internal.pageSize.getWidth()
     const pageH = doc.internal.pageSize.getHeight()
-    const margin = 36
-    const scale = Math.min((pageW - margin * 2) / canvas.width, (pageH - margin * 2) / canvas.height, 1)
+    const margin = original ? 0 : 36
+    const scale = original ? 1 : Math.min((pageW - margin * 2) / canvas.width, (pageH - margin * 2) / canvas.height, 1)
     const w = canvas.width * scale
     const h = canvas.height * scale
 

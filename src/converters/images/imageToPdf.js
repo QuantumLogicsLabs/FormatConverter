@@ -6,17 +6,18 @@ export default async function imageToPdf(file, options, onProgress) {
   onProgress({ stage: 'decode' })
   const canvas = await decodeImage(file, options.from)
 
+  const original = options.pageSize === 'original'
   const doc = new jsPDF({
     unit: 'pt',
-    format: options.pageSize || 'a4',
+    format: original ? [canvas.width, canvas.height] : (options.pageSize || 'a4'),
     orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
     compress: true,
   })
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
-  const margin = 36
+  const margin = original ? 0 : 36
 
-  const scale = Math.min((pageW - margin * 2) / canvas.width, (pageH - margin * 2) / canvas.height, 1)
+  const scale = original ? 1 : Math.min((pageW - margin * 2) / canvas.width, (pageH - margin * 2) / canvas.height, 1)
   const w = canvas.width * scale
   const h = canvas.height * scale
 
